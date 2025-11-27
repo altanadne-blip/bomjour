@@ -1,15 +1,48 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI</title>
+    <title>Космічна Реєстрація</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1> HYITA PESNYA</h1>
-    <p style="text-align: center;"> go rabotat gay </p>
+    <div class="cosmic-container">
+        <div class="stars"></div>
+        <div class="planet"></div>
+        
+        <form class="signup-form" id="cosmicForm">
+            <div class="rocket-container">
+                <div class="rocket" id="userRocket">
+                    <!-- SVG або HTML-елементи ракети -->
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <input type="text" id="username" required>
+                <label for="username">Ім'я астронавта</label>
+                <div class="trail"></div>
+            </div>
+            
+            <div class="input-group">
+                <input type="email" id="email" required>
+                <label for="email">Космічна пошта</label>
+                <div class="trail"></div>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" id="password" required>
+                <label for="password">Гравітаційний ключ</label>
+                <div class="trail"></div>
+            </div>
+            
+            <button type="submit" class="launch-btn">
+                <span>Запуск!</span>
+                <div class="rocket-fire"></div>
+            </button>
+        </form>
+    </div>
     
+    <script src="script.js"></script>
 </body>
-
 </html>
 
