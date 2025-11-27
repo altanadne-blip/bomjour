@@ -1,70 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign Up / Login</title>
+    <title>Sign Up</title>
 </head>
 <body>
-    <h2>Sign Up</h2>
-    <input type="email" id="signup-email" placeholder="Email">
-    <input type="password" id="signup-password" placeholder="Password">
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
     <button onclick="signUp()">Sign Up</button>
-    <div id="signup-message"></div>
-
-    <h2>Login</h2>
-    <input type="email" id="login-email" placeholder="Email">
-    <input type="password" id="login-password" placeholder="Password">
-    <button onclick="login()">Login</button>
-    <div id="login-message"></div>
+    <div id="message"></div>
 
     <script>
-        async function signUp() {
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            
-            try {
-                const response = await fetch('/api/signup', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password})
-                });
+    async function signUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        console.log('Signing up with email:', email, 'and password:', password); // Логируем данные
 
-                const result = await response.json();
-                
-                if (response.ok) {
-                    document.getElementById('signup-message').textContent = 'Success! Check email.';
-                } else {
-                    document.getElementById('signup-message').textContent = 'Error: ' + result.error;
-                }
-            } catch (error) {
-                document.getElementById('signup-message').textContent = 'Network error';
+        try {
+            const response = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password})
+            });
+
+            console.log('Response status:', response.status); // Логируем статус ответа
+            const result = await response.json();
+            console.log('Response result:', result); // Логируем тело ответа
+
+            if (response.ok) {
+                document.getElementById('message').textContent = 'Success! Check email.';
+            } else {
+                document.getElementById('message').textContent = 'Error: ' + result.error;
             }
+        } catch (error) {
+            console.log('Network error:', error); // Логируем ошибку сети
+            document.getElementById('message').textContent = 'Network error';
         }
+    }
+</script>
 
-        async function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password})
-                });
-
-                const result = await response.json();
-                
-                if (response.ok) {
-                    // Перенаправление на условную страницу аккаунта
-                    window.location.href = '/account'; // Страница аккаунта
-                } else {
-                    document.getElementById('login-message').textContent = 'Error: ' + result.error;
-                }
-            } catch (error) {
-                document.getElementById('login-message').textContent = 'Network error';
-            }
-        }
-    </script>
 </body>
 </html>
