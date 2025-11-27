@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard</title>
+</head>
+<body>
+    <h2>Welcome to your Dashboard!</h2>
+    <p id="user-info">Loading...</p>
+
+    <script>
+    // Функция для получения информации о текущем пользователе
+    async function getUserInfo() {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+        if (response.ok) {
+            document.getElementById('user-info').textContent = `Hello, ${data.user.email}`;
+        } else {
+            document.getElementById('user-info').textContent = 'Error: ' + data.error;
+        }
+    }
+
+    // Вызываем функцию для загрузки данных
+    getUserInfo();
+    </script>
+</body>
+</html>
