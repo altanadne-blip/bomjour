@@ -2,15 +2,23 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Sign Up</title>
+    <title>Sign Up / Login</title>
 </head>
 <body>
+    <h2>Sign Up</h2>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="password" placeholder="Password">
     <button onclick="signUp()">Sign Up</button>
     <div id="message"></div>
 
+    <h2>Login</h2>
+    <input type="email" id="login-email" placeholder="Email">
+    <input type="password" id="login-password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <div id="login-message"></div>
+
     <script>
+    // Функция регистрации
     async function signUp() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -38,7 +46,36 @@
             document.getElementById('message').textContent = 'Network error';
         }
     }
-</script>
 
+    // Функция логина
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        console.log('Logging in with email:', email, 'and password:', password); // Логируем данные
+
+        try {
+            const response = await fetch('/api/signup', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({email, password, login: true}) // Добавляем параметр login
+            });
+
+            console.log('Response status:', response.status); // Логируем статус ответа
+            const result = await response.json();
+            console.log('Response result:', result); // Логируем тело ответа
+
+            if (response.ok) {
+                // Перенаправляем на страницу после успешного логина
+                window.location.href = '/dashboard.html';
+            } else {
+                document.getElementById('login-message').textContent = 'Error: ' + result.error;
+            }
+        } catch (error) {
+            console.log('Network error:', error); // Логируем ошибку сети
+            document.getElementById('login-message').textContent = 'Network error';
+        }
+    }
+    </script>
 </body>
 </html>
