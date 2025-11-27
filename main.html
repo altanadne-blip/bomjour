@@ -1,62 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI - Sign Up</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 400px;
-            margin: 50px auto;
-            padding: 20px;
-        }
-        input {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            width: 100%;
-            padding: 12px;
-            background: #3CB371;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background: #2E8B57;
-        }
-        button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        #message {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 4px;
-            display: none;
-        }
-        .success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-    </style>
+    <title>Sign Up</title>
 </head>
 <body>
-    <h2>Create Account</h2>
     <input type="email" id="email" placeholder="Email">
     <input type="password" id="password" placeholder="Password">
     <button onclick="signUp()">Sign Up</button>
@@ -66,69 +14,25 @@
         async function signUp() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const button = document.querySelector('button');
-            const messageDiv = document.getElementById('message');
-
-            // Валидация
-            if (!email || !password) {
-                showMessage('Please fill in all fields', 'error');
-                return;
-            }
-
-            if (password.length < 6) {
-                showMessage('Password must be at least 6 characters', 'error');
-                return;
-            }
-
-            // Блокируем кнопку
-            button.disabled = true;
-            button.textContent = 'Signing Up...';
-
+            
             try {
-                // Отправляем запрос к API route
                 const response = await fetch('/api/signup', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: email, 
-                        password: password 
-                    }),
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, password})
                 });
-
+                
                 const result = await response.json();
-
-                if (!response.ok) {
-                    showMessage('Error: ' + result.error, 'error');
+                
+                if (response.ok) {
+                    document.getElementById('message').textContent = 'Success! Check email.';
                 } else {
-                    showMessage('✅ ' + result.message, 'success');
-                    // Очищаем поля
-                    document.getElementById('email').value = '';
-                    document.getElementById('password').value = '';
+                    document.getElementById('message').textContent = 'Error: ' + result.error;
                 }
             } catch (error) {
-                showMessage('Network error: ' + error.message, 'error');
-            } finally {
-                // Разблокируем кнопку
-                button.disabled = false;
-                button.textContent = 'Sign Up';
+                document.getElementById('message').textContent = 'Network error';
             }
         }
-
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = text;
-            messageDiv.className = type;
-            messageDiv.style.display = 'block';
-        }
-
-        // Поддержка Enter
-        document.getElementById('password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                signUp();
-            }
-        });
     </script>
 </body>
 </html>
