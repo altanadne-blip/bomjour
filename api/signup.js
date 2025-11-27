@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 module.exports = async (req, res) => {
-  // Логирование каждого запроса для отладки
+  // Логируем каждый запрос для отладки
   console.log('Received request method:', req.method);
   
   // Логируем тело запроса
@@ -23,13 +23,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Логируем переменные окружения
-    console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
-    console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY);
-
-    // Получаем email и password из тела запроса
-    const { email, password } = req.body;
-    console.log('Email:', email, 'Password:', password); // Логируем email и пароль (для отладки)
+    const { email, password, login } = req.body; // Получаем login из тела запроса
+    console.log('Email:', email, 'Password:', password, 'Login:', login); // Логируем email и пароль (для отладки)
 
     // Проверяем, что данные не пустые
     if (!email || !password) {
@@ -43,23 +38,44 @@ module.exports = async (req, res) => {
       process.env.SUPABASE_ANON_KEY
     );
 
-    // Пытаемся выполнить регистрацию
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    if (login) {
+      // Пытаемся выполнить логин
+      console.log('Attempting to log in...');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      console.log('Supabase error:', error.message);
-      throw error;
+      if (error) {
+        console.log('Supabase error during login:', error.message);
+        throw error;
+      }
+
+      console.log('Login successful:', data);
+
+      res.status(200).json({
+        message: 'Login successful',
+      });
+
+    } else {
+      // Пытаемся выполнить регистрацию
+      console.log('Attempting to sign up...');
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+
+      if (error) {
+        console.log('Supabase error during signup:', error.message);
+        throw error;
+      }
+
+      console.log('Sign up successful:', data);
+
+      res.status(200).json({
+        message: 'Success! Check your email for confirmation.',
+      });
     }
-
-    console.log('User signed up successfully:', data);
-
-    // Ответ на успешную регистрацию
-    res.status(200).json({
-      message: 'Success! Check your email for confirmation.'
-    });
 
   } catch (error) {
     console.log('Caught error:', error);
