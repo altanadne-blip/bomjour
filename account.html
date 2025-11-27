@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account</title>
+</head>
+<body>
+    <h2>Account Page</h2>
+    <p id="account-info">Loading account info...</p>
+
+    <script>
+        async function getAccountInfo() {
+            const response = await fetch('/api/account');
+            const data = await response.json();
+            if (response.ok) {
+                document.getElementById('account-info').textContent = `Welcome, ${data.user.email}`;
+            } else {
+                document.getElementById('account-info').textContent = 'Error: ' + data.error;
+            }
+        }
+
+        getAccountInfo();
+    </script>
+</body>
+</html>
