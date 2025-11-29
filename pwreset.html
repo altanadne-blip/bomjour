@@ -1,48 +1,51 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Reset Password</title>
-  <style>
-    body { font-family: Arial; padding: 20px; }
-    .box { width: 300px; margin: auto; }
-    input, button { width: 100%; padding: 10px; margin-top: 10px; }
-    #msg { margin-top: 10px; }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="box">
-  <h2>Reset password</h2>
 
-  <input id="email" type="email" placeholder="Email">
-  <button id="send">Send reset link</button>
+<div class="login-container">
+  <h1>Reset password</h1>
 
-  <div id="msg"></div>
+  <input id="reset-email" type="email" placeholder="Enter email">
+
+  <button id="send-reset">Send link</button>
+
+  <p id="reset-message"></p>
 </div>
 
 <script>
-document.getElementById("send").addEventListener("click", async () => {
-  const email = document.getElementById("email").value;
-  const msg = document.getElementById("msg");
+document.getElementById("send-reset").addEventListener("click", async () => {
+  const email = document.getElementById("reset-email").value;
+  const msg = document.getElementById("reset-message");
 
   msg.textContent = "Sending...";
 
-  const res = await fetch("/api/reset", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email })
-  });
+  try {
+    const res = await fetch("/api/reset", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!res.ok) {
-    msg.textContent = data.error;
+    if (!res.ok) {
+      msg.textContent = data.error;
+      msg.style.color = "red";
+    } else {
+      msg.textContent = "Check your email for link";
+      msg.style.color = "green";
+    }
+  } catch (e) {
+    msg.textContent = "Server error";
     msg.style.color = "red";
-  } else {
-    msg.textContent = "Check your email for reset link";
-    msg.style.color = "green";
   }
 });
 </script>
+
 </body>
 </html>
