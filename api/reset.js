@@ -14,9 +14,10 @@ module.exports = async (req, res) => {
     if (!email)
       return res.status(400).json({ error: "Email is required" });
 
+    // Используем те же переменные окружения, что и в рабочем коде
     const supabase = createClient(
       process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE
+      process.env.SUPABASE_ANON_KEY  // Изменено с SERVICE_ROLE на ANON_KEY
     );
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
