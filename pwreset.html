@@ -1,51 +1,122 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Reset Password</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset</title>
+
+    <style>
+        /* Весь стиль скопирован из твоего основного файла */
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;}
+        body{
+            background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
+        .auth-container{
+            background:#1e293b;
+            border-radius:24px;
+            box-shadow:0 30px 60px rgba(0,0,0,0.4);
+            width:100%;
+            max-width:500px;
+            min-height:350px;
+            border:1px solid #334155;
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+            position:relative;
+            padding:40px;
+        }
+        h2{
+            color:#f1f5f9;
+            text-align:center;
+            margin-bottom:30px;
+            font-size:26px;
+            font-weight:700;
+        }
+        .form-group{margin-bottom:25px;}
+        .form-input{
+            width:100%;
+            padding:18px 20px;
+            background:#334155;
+            border:2px solid #475569;
+            border-radius:12px;
+            font-size:17px;
+            color:#f1f5f9;
+            transition:all .3s ease;
+        }
+        .form-input:focus{
+            outline:none;
+            border-color:#818cf8;
+            background:#3c4a5f;
+            box-shadow:0 0 0 4px rgba(129,140,248,0.15);
+        }
+        .form-input::placeholder{color:#94a3b8;}
+        .submit-btn{
+            width:100%;
+            background:linear-gradient(135deg,#818cf8 0%,#6366f1 100%);
+            color:white;
+            border:none;
+            padding:20px 28px;
+            border-radius:12px;
+            font-size:18px;
+            font-weight:600;
+            cursor:pointer;
+            transition:.3s;
+        }
+        .submit-btn:hover{
+            transform:translateY(-2px);
+            box-shadow:0 15px 30px rgba(129,140,248,0.35);
+        }
+        .message{text-align:center;font-size:15px;margin-top:15px;color:#10b981;}
+        .error{color:#ef4444;}
+    </style>
 </head>
+
 <body>
+    <div class="auth-container">
+        <h2>Password Reset</h2>
 
-<div class="login-container">
-  <h1>Reset password</h1>
+        <form id="resetForm">
+            <div class="form-group">
+                <input type="email" class="form-input" id="reset-email" placeholder="Your Email" required>
+            </div>
+            <button type="submit" class="submit-btn">Send reset link</button>
 
-  <input id="reset-email" type="email" placeholder="Enter email">
+            <div class="message" id="reset-message"></div>
+        </form>
+    </div>
 
-  <button id="send-reset">Send link</button>
+    <script type="module">
+        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-  <p id="reset-message"></p>
-</div>
+        const supabase = createClient(
+            "YOUR_SUPABASE_URL",
+            "YOUR_ANON_KEY"
+        );
 
-<script>
-document.getElementById("send-reset").addEventListener("click", async () => {
-  const email = document.getElementById("reset-email").value;
-  const msg = document.getElementById("reset-message");
+        document.getElementById("resetForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
 
-  msg.textContent = "Sending...";
+            const email = document.getElementById("reset-email").value;
+            const msg = document.getElementById("reset-message");
 
-  try {
-    const res = await fetch("/api/reset", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email })
-    });
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: "https://YOUR_DOMAIN.com/newpassword.html"
+            });
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      msg.textContent = data.error;
-      msg.style.color = "red";
-    } else {
-      msg.textContent = "Check your email for link";
-      msg.style.color = "green";
-    }
-  } catch (e) {
-    msg.textContent = "Server error";
-    msg.style.color = "red";
-  }
-});
-</script>
+            if (error) {
+                msg.textContent = error.message;
+                msg.classList.add("error");
+            } else {
+                msg.textContent = "Reset link sent. Check your email.";
+                msg.classList.remove("error");
+            }
+        });
+    </script>
 
 </body>
 </html>
