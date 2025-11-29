@@ -16,6 +16,10 @@
       "dest": "/api/signup.js"
     },
     {
+      "src": "/api/reset",
+      "dest": "/api/reset.js"
+    },
+    {
       "src": "/",
       "dest": "/main.html"
     }
