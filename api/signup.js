@@ -2,11 +2,170 @@ const { createClient } = require('@supabase/supabase-js');
 const { ethers } = require('ethers');
 const crypto = require('crypto');
 
-module.exports = async (req, res) => {
+// Функции аутентификации
+const authFunctions = {
+  // Проверка активной сессии
+  getCurrentSession: async (supabaseClient) => {
+    try {
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      return session;
+    } catch (error) {
+      console.error('Error getting session:', error);
+      return null;
+    }
+  },
+
+  // Получение текущего пользователя
+  getCurrentUser: async (supabaseClient) => {
+    try {
+      const { data: { user }, error } = await supabaseClient.auth.getUser();
+      if (error) throw error;
+      return user;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+  },
+
+  // Вход по email и паролю
+  signIn: async (supabaseClient, email, password) => {
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email.trim(),
+        password: password,
+      });
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Sign in error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Регистрация нового пользователя
+  signUp: async (supabaseClient, email, password, userData = {}) => {
+    try {
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            email: email.trim(),
+            ...userData
+          }
+        }
+      });
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Sign up error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Выход
+  signOut: async (supabaseClient) => {
+    try {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      console.error('Sign out error:', error);
+      return { error };
+    }
+  },
+
+  // Обновление токена
+  refreshSession: async (supabaseClient) => {
+    try {
+      const { data, error } = await supabaseClient.auth.refreshSession();
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Refresh session error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Сброс пароля
+  resetPassword: async (supabaseClient, email) => {
+    try {
+      const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.SITE_URL}/pwreset.html`,
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Reset password error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Обновление пароля
+  updatePassword: async (supabaseClient, newPassword) => {
+    try {
+      const { data, error } = await supabaseClient.auth.updateUser({
+        password: newPassword
+      });
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Update password error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Получение профиля пользователя
+  getUserProfile: async (supabaseClient, userId) => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Get user profile error:', error);
+      return { data: null, error };
+    }
+  },
+
+  // Обновление профиля пользователя
+  updateUserProfile: async (supabaseClient, userId, updates) => {
+    try {
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId)
+        .select();
+      
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      console.error('Update user profile error:', error);
+      return { data: null, error };
+    }
+  }
+};
+
+module.exports = authFunctions;
+
+// Основная функция обработки запросов
+module.exports.handler = async (req, res) => {
   console.log('Received request method:', req.method);
   
   // Разрешаем CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -36,25 +195,27 @@ module.exports = async (req, res) => {
     );
 
     if (login) {
-      // Логин через auth клиент
-      const { data, error } = await authClient.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Логин через auth функции
+      console.log('=== НАЧАЛО ЛОГИНА ===');
+      const { data, error } = await authFunctions.signIn(authClient, email, password);
 
       if (error) throw error;
 
-      res.status(200).json({ message: 'Login successful' });
+      console.log('✅ Логин успешен:', data.user?.id);
+      res.status(200).json({ 
+        message: 'Login successful',
+        user: {
+          id: data.user.id,
+          email: data.user.email
+        }
+      });
 
     } else {
       console.log('=== НАЧАЛО РЕГИСТРАЦИИ ===');
       
-      // 1. Регистрируем пользователя через auth клиент
+      // 1. Регистрируем пользователя через auth функции
       console.log('1. Регистрация в Supabase Auth...');
-      const { data: authData, error: authError } = await authClient.auth.signUp({
-        email,
-        password,
-      });
+      const { data: authData, error: authError } = await authFunctions.signUp(authClient, email, password);
 
       if (authError) {
         console.log('❌ Ошибка Auth:', authError.message);
@@ -89,7 +250,7 @@ module.exports = async (req, res) => {
             id: authData.user.id,
             email: email,
             deposit_address: depositAddress,
-            private_key: privateKey, // ← ДОБАВЛЯЕМ ТОЛЬКО ЭТУ СТРОЧКУ
+            private_key: privateKey,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           }
