@@ -20,8 +20,8 @@
       "dest": "/api/reset.js"
     },
     {
-      "src": "/api/deposits_monitor",
-      "dest": "/api/deposits_monitor.js"
+      "src": "/api/depositmonitor",
+      "dest": "/api/depositmonitor.js"
     },
     {
       "src": "/",
@@ -30,7 +30,7 @@
   ],
   "crons": [
     {
-      "path": "/api/deposits_monitor",
+      "path": "/api/depositmonitor",
       "schedule": "*/2 * * * *"
     }
   ]
