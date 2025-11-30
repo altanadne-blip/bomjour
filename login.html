@@ -447,8 +447,13 @@
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
         const messageElement = document.getElementById('message');
+        const submitBtn = document.querySelector('#signupForm .submit-btn');
         
-        console.log('Signing up with email:', email, 'and password:', password);
+        console.log('Signing up with email:', email);
+
+        // Показываем loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating Account...';
 
         try {
             const response = await fetch('/api/signup', {
@@ -462,16 +467,28 @@
             console.log('Response result:', result);
 
             if (response.ok) {
-                messageElement.textContent = 'Success! Check email.';
+                messageElement.textContent = 'Success! Please check your email for confirmation.';
                 messageElement.className = 'message';
+                
+                // Очищаем форму
+                document.getElementById('signupForm').reset();
+                
+                // Переключаем на логин через 2 секунды
+                setTimeout(() => {
+                    switchTab('login');
+                    messageElement.textContent = '';
+                }, 2000);
             } else {
                 messageElement.textContent = 'Error: ' + result.error;
                 messageElement.className = 'message error';
             }
         } catch (error) {
-            console.log('Network error:', error);
-            messageElement.textContent = 'Network error';
+            console.error('Signup error:', error);
+            messageElement.textContent = 'Network error: ' + error.message;
             messageElement.className = 'message error';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Account';
         }
     }
 
@@ -480,8 +497,13 @@
         const email = document.getElementById('login-email').value;
         const password = document.getElementById('login-password').value;
         const messageElement = document.getElementById('login-message');
+        const submitBtn = document.querySelector('#loginForm .submit-btn');
         
-        console.log('Logging in with email:', email, 'and password:', password);
+        console.log('Logging in with email:', email);
+
+        // Показываем loading state
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Logging in...';
 
         try {
             const response = await fetch('/api/login', {
@@ -495,20 +517,41 @@
             console.log('Login response result:', result);
 
             if (response.ok) {
-                // NEW: save JWT
-                localStorage.setItem('token', result.access_token);
-
-                // redirect
-                window.location.href = '/dashboard.html';
+                // Проверяем наличие токена
+                if (result.access_token) {
+                    // Сохраняем JWT
+                    localStorage.setItem('token', result.access_token);
+                    console.log('Token saved successfully:', result.access_token.substring(0, 20) + '...');
+                    
+                    // Проверяем сохранение
+                    const savedToken = localStorage.getItem('token');
+                    console.log('Token verification - saved token:', savedToken ? savedToken.substring(0, 20) + '...' : 'NULL');
+                    
+                    // Редирект
+                    window.location.href = '/dashboard.html';
+                } else {
+                    throw new Error('No access token received from server');
+                }
             } else {
                 messageElement.textContent = 'Error: ' + result.error;
                 messageElement.className = 'message error';
             }
         } catch (error) {
-            console.log('Network error:', error);
-            messageElement.textContent = 'Network error';
+            console.error('Login error:', error);
+            messageElement.textContent = 'Login failed: ' + error.message;
             messageElement.className = 'message error';
+        } finally {
+            // Восстанавливаем кнопку
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login to Account';
         }
+    }
+
+    // Функция для проверки токена (для отладки)
+    function checkStoredToken() {
+        const token = localStorage.getItem('token');
+        console.log('Stored token check:', token ? token.substring(0, 20) + '...' : 'NO TOKEN FOUND');
+        return token;
     }
 
     // Form submission handlers
@@ -532,8 +575,12 @@
                 switchTab(targetTab);
             });
         });
+
+        // Проверяем наличие токена при загрузке (для отладки)
+        console.log('Page loaded. Checking for existing token...');
+        checkStoredToken();
     });
 </script>
-
 </body>
 </html>
+
