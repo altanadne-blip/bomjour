@@ -22,7 +22,7 @@
     {
   "crons": [
     {
-      "path": "/api/check-bsc-deposits",
+      "path": "/api/deposits_monitor",
       "schedule": "*/2 * * * *"
     }
   ]
