@@ -389,164 +389,365 @@
     </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-  // Password visibility toggle
-  function setupPasswordToggle() {
-      const toggleButtons = document.querySelectorAll('.password-toggle');
-      
-      toggleButtons.forEach(button => {
-          button.addEventListener('click', function() {
-              const passwordInput = this.previousElementSibling;
-              const eyeOpen = this.querySelector('.eye-open');
-              const eyeClosed = this.querySelector('.eye-closed');
-              
-              if (passwordInput.type === 'password') {
-                  passwordInput.type = 'text';
-                  eyeOpen.style.display = 'none';
-                  eyeClosed.style.display = 'block';
-              } else {
-                  passwordInput.type = 'password';
-                  eyeOpen.style.display = 'block';
-                  eyeClosed.style.display = 'none';
-              }
-          });
-      });
-  }
+    // Инициализация Supabase клиента
+    const supabaseUrl = 'https://your-project.supabase.co'; // ЗАМЕНИТЕ НА ВАШ URL
+    const supabaseKey = 'your-anon-key'; // ЗАМЕНИТЕ НА ВАШ ANON KEY
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey, {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true,
+            storage: localStorage,
+            storageKey: 'supabase.auth.token'
+        }
+    });
 
-  // Tab switching functionality
-  const tabs = document.querySelectorAll('.tab');
-  const forms = document.querySelectorAll('.auth-form');
-  const authContainer = document.getElementById('authContainer');
+    // Password visibility toggle
+    function setupPasswordToggle() {
+        const toggleButtons = document.querySelectorAll('.password-toggle');
+        
+        toggleButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const passwordInput = this.previousElementSibling;
+                const eyeOpen = this.querySelector('.eye-open');
+                const eyeClosed = this.querySelector('.eye-closed');
+                
+                if (passwordInput.type === 'password') {
+                    passwordInput.type = 'text';
+                    eyeOpen.style.display = 'none';
+                    eyeClosed.style.display = 'block';
+                } else {
+                    passwordInput.type = 'password';
+                    eyeOpen.style.display = 'block';
+                    eyeClosed.style.display = 'none';
+                }
+            });
+        });
+    }
 
-  function switchTab(targetTab) {
-      tabs.forEach(t => t.classList.remove('active'));
-      document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active');
-      
-      forms.forEach(form => {
-          form.classList.remove('active');
-          if (form.id === `${targetTab}Form`) {
-              setTimeout(() => {
-                  form.classList.add('active');
-                  form.classList.add('fade-in');
-              }, 50);
-          }
-      });
+    // Tab switching functionality
+    const tabs = document.querySelectorAll('.tab');
+    const forms = document.querySelectorAll('.auth-form');
+    const authContainer = document.getElementById('authContainer');
 
-      if (targetTab === 'signup') {
-          authContainer.classList.add('signup-active');
-      } else {
-          authContainer.classList.remove('signup-active');
-      }
+    function switchTab(targetTab) {
+        tabs.forEach(t => t.classList.remove('active'));
+        document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active');
+        
+        forms.forEach(form => {
+            form.classList.remove('active');
+            if (form.id === `${targetTab}Form`) {
+                setTimeout(() => {
+                    form.classList.add('active');
+                    form.classList.add('fade-in');
+                }, 50);
+            }
+        });
 
-      setTimeout(() => {
-          forms.forEach(form => form.classList.remove('fade-in'));
-      }, 400);
-  }
+        if (targetTab === 'signup') {
+            authContainer.classList.add('signup-active');
+        } else {
+            authContainer.classList.remove('signup-active');
+        }
 
-  // Функция регистрации
-  async function signUp() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      const messageElement = document.getElementById('message');
-      const submitBtn = document.querySelector('#signupForm .submit-btn');
-      
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Creating Account...';
+        setTimeout(() => {
+            forms.forEach(form => form.classList.remove('fade-in'));
+        }, 400);
+    }
 
-      try {
-          const { data, error } = await supabase.auth.signUp({
-              email: email,
-              password: password,
-              options: {
-                  data: {
-                      email: email
-                  }
-              }
-          });
+    // Функции для работы с сессиями
+    const sessionManager = {
+        // Проверка активной сессии
+        async checkActiveSession() {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                if (error) throw error;
+                
+                if (session) {
+                    console.log('Active session found for user:', session.user.email);
+                    return session;
+                }
+                return null;
+            } catch (error) {
+                console.error('Session check error:', error);
+                return null;
+            }
+        },
 
-          if (error) {
-              messageElement.textContent = 'Error: ' + error.message;
-              messageElement.className = 'message error';
-          } else {
-              messageElement.textContent = 'Success! Check your email for verification.';
-              messageElement.className = 'message';
-          }
-      } catch (error) {
-          messageElement.textContent = 'Network error: ' + error.message;
-          messageElement.className = 'message error';
-      } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Create Account';
-      }
-  }
+        // Создание сессии через логин
+        async createSession(email, password) {
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email.trim(),
+                    password: password
+                });
 
-  // Функция логина
-  async function login() {
-      const email = document.getElementById('login-email').value;
-      const password = document.getElementById('login-password').value;
-      const messageElement = document.getElementById('login-message');
-      const submitBtn = document.querySelector('#loginForm .submit-btn');
-      
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Signing In...';
+                if (error) throw error;
 
-      try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-              email: email,
-              password: password
-          });
+                // Сессия автоматически сохраняется в localStorage
+                console.log('Session created successfully for:', data.user.email);
+                return { success: true, data };
+            } catch (error) {
+                console.error('Session creation error:', error);
+                return { success: false, error: error.message };
+            }
+        },
 
-          if (error) {
-              messageElement.textContent = 'Error: ' + error.message;
-              messageElement.className = 'message error';
-          } else {
-              // Редирект на dashboard после успешного логина
-              window.location.href = '/dashboard.html';
-          }
-      } catch (error) {
-          messageElement.textContent = 'Network error: ' + error.message;
-          messageElement.className = 'message error';
-      } finally {
-          submitBtn.disabled = false;
-          submitBtn.textContent = 'Login to Account';
-      }
-  }
+        // Создание сессии через регистрацию
+        async createSessionFromSignUp(email, password) {
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email.trim(),
+                    password: password,
+                    options: {
+                        data: {
+                            email: email.trim()
+                        }
+                    }
+                });
 
-  // Проверка существующей сессии
-  async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-          window.location.href = '/dashboard.html';
-      }
-  }
+                if (error) throw error;
 
-  // Form submission handlers
-  document.getElementById('loginForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      login();
-  });
+                console.log('User registered and session created for:', data.user?.email);
+                return { success: true, data };
+            } catch (error) {
+                console.error('Registration session error:', error);
+                return { success: false, error: error.message };
+            }
+        },
 
-  document.getElementById('signupForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      signUp();
-  });
+        // Выход и удаление сессии
+        async destroySession() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
 
-  // Initialize
-  document.addEventListener('DOMContentLoaded', function() {
-      setupPasswordToggle();
-      checkAuth(); // Проверяем сессию при загрузке
-      
-      tabs.forEach(tab => {
-          tab.addEventListener('click', () => {
-              const targetTab = tab.getAttribute('data-tab');
-              switchTab(targetTab);
-          });
-      });
-  });
+                // Очищаем localStorage
+                localStorage.removeItem('supabase.auth.token');
+                console.log('Session destroyed successfully');
+                return { success: true };
+            } catch (error) {
+                console.error('Session destruction error:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        // Получение текущего пользователя
+        async getCurrentUser() {
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                if (error) throw error;
+                return user;
+            } catch (error) {
+                console.error('Get current user error:', error);
+                return null;
+            }
+        },
+
+        // Обновление токена
+        async refreshSession() {
+            try {
+                const { data, error } = await supabase.auth.refreshSession();
+                if (error) throw error;
+                return { success: true, data };
+            } catch (error) {
+                console.error('Session refresh error:', error);
+                return { success: false, error: error.message };
+            }
+        },
+
+        // Проверка состояния аутентификации
+        async getAuthState() {
+            try {
+                const { data: { subscription }, error } = await supabase.auth.onAuthStateChange(
+                    (event, session) => {
+                        console.log('Auth state changed:', event, session?.user?.email);
+                    }
+                );
+
+                return subscription;
+            } catch (error) {
+                console.error('Auth state error:', error);
+                return null;
+            }
+        }
+    };
+
+    // Функция регистрации с созданием сессии
+    async function signUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const messageElement = document.getElementById('message');
+        const submitBtn = document.querySelector('#signupForm .submit-btn');
+        
+        if (!email || !password) {
+            messageElement.textContent = 'Please fill all fields';
+            messageElement.className = 'message error';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Creating Account...';
+
+        console.log('Starting registration for:', email);
+
+        try {
+            const result = await sessionManager.createSessionFromSignUp(email, password);
+
+            if (result.success) {
+                messageElement.textContent = 'Success! Check your email for verification.';
+                messageElement.className = 'message';
+                
+                // Сессия автоматически сохраняется
+                console.log('Session saved to localStorage');
+                
+                // Опционально: редирект после успешной регистрации
+                // setTimeout(() => {
+                //     window.location.href = '/dashboard.html';
+                // }, 2000);
+            } else {
+                messageElement.textContent = 'Error: ' + result.error;
+                messageElement.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Registration error:', error);
+            messageElement.textContent = 'Registration failed';
+            messageElement.className = 'message error';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Create Account';
+        }
+    }
+
+    // Функция логина с созданием сессии
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        const messageElement = document.getElementById('login-message');
+        const submitBtn = document.querySelector('#loginForm .submit-btn');
+        
+        if (!email || !password) {
+            messageElement.textContent = 'Please fill all fields';
+            messageElement.className = 'message error';
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Signing In...';
+
+        console.log('Starting login for:', email);
+
+        try {
+            const result = await sessionManager.createSession(email, password);
+
+            if (result.success) {
+                messageElement.textContent = 'Login successful! Redirecting...';
+                messageElement.className = 'message';
+                
+                // Сессия автоматически сохраняется в localStorage
+                console.log('Session saved to localStorage, redirecting to dashboard');
+                
+                // Редирект на dashboard
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1000);
+            } else {
+                messageElement.textContent = 'Error: ' + result.error;
+                messageElement.className = 'message error';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            messageElement.textContent = 'Login failed';
+            messageElement.className = 'message error';
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login to Account';
+        }
+    }
+
+    // Проверка существующей сессии при загрузке
+    async function checkExistingSession() {
+        console.log('Checking for existing session...');
+        const session = await sessionManager.checkActiveSession();
+        
+        if (session) {
+            console.log('Active session found, redirecting to dashboard');
+            window.location.href = '/dashboard.html';
+        } else {
+            console.log('No active session found, staying on login page');
+        }
+    }
+
+    // Form submission handlers
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        login();
+    });
+
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        signUp();
+    });
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('Initializing auth portal...');
+        
+        setupPasswordToggle();
+        
+        // Проверяем существующую сессию
+        await checkExistingSession();
+        
+        // Подписываемся на изменения состояния аутентификации
+        await sessionManager.getAuthState();
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.getAttribute('data-tab');
+                switchTab(targetTab);
+            });
+        });
+
+        console.log('Auth portal initialized successfully');
+    });
+
+    // Дополнительные утилиты для отладки
+    window.authUtils = {
+        // Показать текущую сессию (для отладки)
+        showCurrentSession: async () => {
+            const session = await sessionManager.checkActiveSession();
+            console.log('Current session:', session);
+            return session;
+        },
+        
+        // Показать текущего пользователя (для отладки)
+        showCurrentUser: async () => {
+            const user = await sessionManager.getCurrentUser();
+            console.log('Current user:', user);
+            return user;
+        },
+        
+        // Выйти (для отладки)
+        logout: async () => {
+            await sessionManager.destroySession();
+            window.location.reload();
+        },
+        
+        // Проверить localStorage (для отладки)
+        checkStorage: () => {
+            const token = localStorage.getItem('supabase.auth.token');
+            console.log('Stored token exists:', !!token);
+            return token;
+        }
+    };
 </script>
     
 </body>
 </html>
+
 
 
 
