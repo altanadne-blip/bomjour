@@ -16,6 +16,10 @@
       "dest": "/api/signup.js"
     },
     {
+      "src": "/api/login",
+      "dest": "/api/login.js"
+    },
+    {
       "src": "/api/reset",
       "dest": "/api/reset.js"
     },
