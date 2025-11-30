@@ -27,24 +27,32 @@ module.exports = async (req, res) => {
       process.env.SUPABASE_ANON_KEY
     );
 
+    console.log('Fetching user data...');
+
     // Получаем пользователя из токена
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
+      console.error('Auth error:', authError);
       return res.status(401).json({ error: 'Invalid token' });
     }
+
+    console.log('User found:', user.email);
 
     // Получаем профиль пользователя с балансом
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('balance')
+      .select('*')
       .eq('id', user.id)
       .single();
+
+    console.log('Profile query result:', { profile, profileError });
 
     let balance = 0;
 
     if (profileError) {
-      console.log('Profile not found, creating new one...');
+      console.log('Profile not found, creating new one for user:', user.id);
+      
       // Создаем профиль если его нет
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
@@ -52,30 +60,38 @@ module.exports = async (req, res) => {
           id: user.id, 
           email: user.email,
           balance: 0,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }])
         .select()
         .single();
 
       if (insertError) {
         console.error('Error creating profile:', insertError);
+        balance = 0;
       } else {
         balance = newProfile.balance || 0;
+        console.log('New profile created with balance:', balance);
       }
     } else {
       balance = profile.balance || 0;
+      console.log('Existing profile found with balance:', balance);
     }
 
     // Возвращаем все данные пользователя
-    return res.status(200).json({
+    const responseData = {
       id: user.id,
       email: user.email,
       created_at: user.created_at,
       balance: balance
-    });
+    };
+
+    console.log('Sending response:', responseData);
+
+    return res.status(200).json(responseData);
 
   } catch (error) {
     console.error('User data error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error: ' + error.message });
   }
 };
