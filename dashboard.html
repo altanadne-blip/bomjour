@@ -476,131 +476,189 @@
     </div>
 
     <script>
-        let currentUser = null;
+    let currentUser = null;
 
-        // Проверка JWT токена и загрузка данных
-        async function checkAuthAndLoadData() {
-            const token = localStorage.getItem('token');
+    // Проверка JWT токена и загрузка данных
+    async function checkAuthAndLoadData() {
+        const token = localStorage.getItem('token');
+        
+        console.log('Checking token:', token ? 'Token exists' : 'No token');
+        
+        if (!token) {
+            console.log('No token found, redirecting to login');
+            redirectToLogin();
+            return;
+        }
+
+        try {
+            // Проверяем валидность токена
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const isExpired = Date.now() >= payload.exp * 1000;
             
-            if (!token) {
-                console.log('No token found, redirecting to login');
+            console.log('Token expiration check:', { 
+                exp: payload.exp, 
+                current: Date.now() / 1000,
+                isExpired 
+            });
+            
+            if (isExpired) {
+                console.log('Token expired, redirecting to login');
+                localStorage.removeItem('token');
                 redirectToLogin();
                 return;
             }
 
-            try {
-                // Проверяем валидность токена
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                const isExpired = Date.now() >= payload.exp * 1000;
-                
-                if (isExpired) {
-                    console.log('Token expired, redirecting to login');
-                    localStorage.removeItem('token');
-                    redirectToLogin();
-                    return;
-                }
+            console.log('Token is valid, loading user data...');
 
-                // Загружаем все данные пользователя одним запросом
-                await loadUserData(token);
-                
-                // Показываем dashboard
-                document.getElementById('loadingState').style.display = 'none';
-                document.getElementById('dashboardContent').style.display = 'grid';
-                
-            } catch (error) {
-                console.error('Auth check failed:', error);
-                showError('Authentication failed');
-            }
-        }
-
-        // Загрузка всех данных пользователя
-        async function loadUserData(token) {
-            try {
-                const response = await fetch('/api/userdata', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch user data');
-                }
-
-                const userData = await response.json();
-                currentUser = userData;
-                
-                // Обновляем интерфейс
-                document.getElementById('userEmail').textContent = userData.email;
-                document.getElementById('totalBalance').textContent = 
-                    `$${userData.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                
-                console.log('User data loaded:', userData);
-                
-            } catch (error) {
-                console.error('Error loading user data:', error);
-                throw error;
-            }
-        }
-
-        // Функция для загрузки данных dashboard
-        async function loadDashboardData() {
-            document.getElementById('loadingState').style.display = 'flex';
-            document.getElementById('errorState').style.display = 'none';
-            document.getElementById('dashboardContent').style.display = 'none';
+            // Загружаем все данные пользователя одним запросом
+            await loadUserData(token);
             
-            await checkAuthAndLoadData();
-        }
-
-        // Показать ошибку
-        function showError(message) {
+            // Показываем dashboard
             document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('errorState').style.display = 'block';
-            document.getElementById('errorState').querySelector('div').textContent = message;
-        }
-
-        // Выход
-        function logout() {
-            localStorage.removeItem('token');
-            redirectToLogin();
-        }
-
-        // Редирект на логин
-        function redirectToLogin() {
-            window.location.href = '/login.html';
-        }
-
-        // Navigation function
-        function navigateToPortfolio() {
-            alert('Navigating to Personal Portfolio...');
-            // window.location.href = '/portfolio';
-        }
-
-        // Action handlers
-        function handleDeposit() {
-            alert('Deposit functionality will be implemented here');
-        }
-
-        function handleWithdraw() {
-            alert('Withdraw functionality will be implemented here');
-        }
-
-        function handleSwap() {
-            alert('Swap functionality will be implemented here');
-        }
-
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDashboardData();
+            document.getElementById('dashboardContent').style.display = 'grid';
             
-            // Add some interactive effects
-            const assetItems = document.querySelectorAll('.asset-item');
-            assetItems.forEach((item, index) => {
-                item.style.animationDelay = `${index * 0.1}s`;
-                item.classList.add('fade-in-up');
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            showError('Authentication failed: ' + error.message);
+        }
+    }
+
+    // Загрузка всех данных пользователя
+    async function loadUserData(token) {
+        try {
+            console.log('Fetching user data from /api/userdata...');
+            
+            const response = await fetch('/api/userdata', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
+
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server response error:', errorText);
+                throw new Error(`Server error: ${response.status} - ${errorText}`);
+            }
+
+            const userData = await response.json();
+            console.log('User data received:', userData);
+            
+            currentUser = userData;
+            
+            // Обновляем интерфейс
+            document.getElementById('userEmail').textContent = userData.email;
+            
+            // Форматируем баланс правильно
+            const balance = parseFloat(userData.balance) || 0;
+            document.getElementById('totalBalance').textContent = 
+                `$${balance.toLocaleString('en-US', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                })}`;
+            
+            console.log('UI updated with balance:', balance);
+            
+        } catch (error) {
+            console.error('Error loading user data:', error);
+            throw error;
+        }
+    }
+
+    // Функция для загрузки данных dashboard
+    async function loadDashboardData() {
+        console.log('Loading dashboard data...');
+        
+        document.getElementById('loadingState').style.display = 'flex';
+        document.getElementById('errorState').style.display = 'none';
+        document.getElementById('dashboardContent').style.display = 'none';
+        
+        await checkAuthAndLoadData();
+    }
+
+    // Показать ошибку
+    function showError(message) {
+        console.error('Showing error:', message);
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+        document.getElementById('errorState').querySelector('div').textContent = message;
+    }
+
+    // Выход
+    function logout() {
+        console.log('Logging out...');
+        localStorage.removeItem('token');
+        redirectToLogin();
+    }
+
+    // Редирект на логин
+    function redirectToLogin() {
+        console.log('Redirecting to login...');
+        window.location.href = '/login.html';
+    }
+
+    // Navigation function
+    function navigateToPortfolio() {
+        alert('Navigating to Personal Portfolio...');
+        // window.location.href = '/portfolio';
+    }
+
+    // Action handlers
+    function handleDeposit() {
+        alert('Deposit functionality will be implemented here');
+    }
+
+    function handleWithdraw() {
+        alert('Withdraw functionality will be implemented here');
+    }
+
+    function handleSwap() {
+        alert('Swap functionality will be implemented here');
+    }
+
+    // Обновление баланса (можно вызывать при действиях)
+    async function refreshBalance() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                await loadUserData(token);
+            } catch (error) {
+                console.error('Failed to refresh balance:', error);
+            }
+        }
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Dashboard page loaded');
+        loadDashboardData();
+        
+        // Add some interactive effects
+        const assetItems = document.querySelectorAll('.asset-item');
+        assetItems.forEach((item, index) => {
+            item.style.animationDelay = `${index * 0.1}s`;
+            item.classList.add('fade-in-up');
         });
-    </script>
+    });
+
+    // Для отладки - добавим функцию проверки в консоль
+    window.debugBalance = async function() {
+        const token = localStorage.getItem('token');
+        console.log('Current token:', token);
+        console.log('Current user data:', currentUser);
+        
+        if (token) {
+            console.log('Making test request to /api/userdata...');
+            const response = await fetch('/api/userdata', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const data = await response.json();
+            console.log('Current balance from API:', data.balance);
+        }
+    };
+</script>
 </body>
 </html>
