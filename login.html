@@ -442,6 +442,31 @@
         }, 400);
     }
 
+    // Функция проверки и редиректа если пользователь уже авторизован
+    function checkExistingAuth() {
+        const token = localStorage.getItem('token');
+        console.log('Checking existing token:', token ? 'Token found' : 'NO TOKEN');
+        
+        if (token) {
+            // Простая проверка - если токен есть и он не истек (по экспирации)
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const isExpired = Date.now() >= payload.exp * 1000;
+                
+                if (!isExpired) {
+                    console.log('Token is valid, redirecting to dashboard...');
+                    window.location.href = '/dashboard.html';
+                } else {
+                    console.log('Token expired, removing...');
+                    localStorage.removeItem('token');
+                }
+            } catch (error) {
+                console.log('Invalid token format, removing...');
+                localStorage.removeItem('token');
+            }
+        }
+    }
+
     // Функция регистрации
     async function signUp() {
         const email = document.getElementById('email').value;
@@ -521,11 +546,7 @@
                 if (result.access_token) {
                     // Сохраняем JWT
                     localStorage.setItem('token', result.access_token);
-                    console.log('Token saved successfully:', result.access_token.substring(0, 20) + '...');
-                    
-                    // Проверяем сохранение
-                    const savedToken = localStorage.getItem('token');
-                    console.log('Token verification - saved token:', savedToken ? savedToken.substring(0, 20) + '...' : 'NULL');
+                    console.log('Token saved successfully');
                     
                     // Редирект
                     window.location.href = '/dashboard.html';
@@ -545,13 +566,6 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Login to Account';
         }
-    }
-
-    // Функция для проверки токена (для отладки)
-    function checkStoredToken() {
-        const token = localStorage.getItem('token');
-        console.log('Stored token check:', token ? token.substring(0, 20) + '...' : 'NO TOKEN FOUND');
-        return token;
     }
 
     // Form submission handlers
@@ -576,11 +590,11 @@
             });
         });
 
-        // Проверяем наличие токена при загрузке (для отладки)
-        console.log('Page loaded. Checking for existing token...');
-        checkStoredToken();
+        // Проверяем авторизацию при загрузке страницы
+        checkExistingAuth();
     });
 </script>
 </body>
 </html>
+
 
