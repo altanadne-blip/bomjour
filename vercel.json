@@ -28,6 +28,10 @@
       "dest": "/api/depositmonitor.js"
     },
     {
+      "src": "/api/userdata",
+      "dest": "/api/userdata.js"
+    },
+    {
       "src": "/",
       "dest": "/login.html"
     }
