@@ -36,29 +36,6 @@
             letter-spacing: 0.5px;
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .logout-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .logout-btn:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
-        }
-
         .profile-icon {
             width: 44px;
             height: 44px;
@@ -255,12 +232,6 @@
             box-shadow: 0 8px 25px rgba(51, 65, 85, 0.3);
         }
 
-        /* Loading State */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
         /* Animations */
         @keyframes fadeInUp {
             from {
@@ -300,15 +271,6 @@
             .actions-panel {
                 padding: 20px;
             }
-
-            .header-actions {
-                gap: 10px;
-            }
-
-            .logout-btn {
-                padding: 8px 12px;
-                font-size: 13px;
-            }
         }
 
         @media (max-width: 480px) {
@@ -328,17 +290,12 @@
             }
         }
     </style>
-    <!-- Supabase CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Header -->
     <header class="dashboard-header">
         <div class="logo">InvestPro</div>
-        <div class="header-actions">
-            <button class="logout-btn" onclick="logout()">Logout</button>
-            <div class="profile-icon" onclick="navigateToPortfolio()">👤</div>
-        </div>
+        <div class="profile-icon" onclick="navigateToPortfolio()">👤</div>
     </header>
 
     <!-- Main Dashboard -->
@@ -348,7 +305,7 @@
             <div class="portfolio-header">
                 <h1 class="portfolio-title">Investment Portfolio</h1>
                 <p class="portfolio-subtitle">Your current holdings and performance</p>
-                <div class="total-balance" id="userBalance">Loading...</div>
+                <div class="total-balance">$24,567.89</div>
             </div>
             
             <div class="assets-list">
@@ -426,115 +383,6 @@
     </main>
 
     <script>
-        // Supabase клиент
-        const supabaseUrl = 'https://your-project.supabase.co'; // Замени на свой URL
-        const supabaseKey = 'your-anon-key'; // Замени на свой anon key
-        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: false,
-                storage: window.localStorage,
-                storageKey: 'supabase.auth.token'
-            }
-        });
-
-        // Проверка авторизации
-        async function checkDashboardAuth() {
-            try {
-                const { data: { session }, error } = await supabase.auth.getSession();
-                
-                if (!session || error) {
-                    console.log('No session found, redirecting to login');
-                    window.location.href = '/login.html';
-                    return null;
-                }
-                
-                console.log('Session found, user:', session.user.email);
-                return session;
-            } catch (error) {
-                console.error('Auth check error:', error);
-                window.location.href = '/login.html';
-                return null;
-            }
-        }
-
-        // Функция загрузки баланса
-        async function loadUserBalance() {
-            try {
-                const session = await checkDashboardAuth();
-                if (!session) return;
-
-                // Получаем баланс пользователя
-                const { data: profile, error } = await supabase
-                    .from('profiles')
-                    .select('balance')
-                    .eq('id', session.user.id)
-                    .single();
-
-                if (error) {
-                    console.error('Error loading profile:', error);
-                    document.getElementById('userBalance').textContent = '$0.00';
-                    return;
-                }
-
-                if (profile) {
-                    const balance = parseFloat(profile.balance || 0).toFixed(2);
-                    document.getElementById('userBalance').textContent = `$${balance}`;
-                    console.log('Balance loaded:', balance);
-                }
-            } catch (error) {
-                console.error('Error loading balance:', error);
-                document.getElementById('userBalance').textContent = '$0.00';
-            }
-        }
-
-        // Real-time подписка на изменения баланса
-        async function subscribeToBalanceUpdates() {
-            const session = await checkDashboardAuth();
-            if (!session) return;
-            
-            const channel = supabase
-                .channel('balance-changes')
-                .on(
-                    'postgres_changes',
-                    {
-                        event: 'UPDATE',
-                        schema: 'public',
-                        table: 'profiles',
-                        filter: `id=eq.${session.user.id}`
-                    },
-                    (payload) => {
-                        const newBalance = parseFloat(payload.new.balance || 0).toFixed(2);
-                        document.getElementById('userBalance').textContent = `$${newBalance}`;
-                        console.log('Balance updated in real-time:', newBalance);
-                    }
-                )
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        console.log('Real-time balance subscription active');
-                    }
-                });
-
-            return channel;
-        }
-
-        // Функция выхода
-        async function logout() {
-            try {
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error('Logout error:', error);
-                }
-                // Очищаем localStorage
-                localStorage.removeItem('supabase.auth.token');
-                window.location.href = '/login.html';
-            } catch (error) {
-                console.error('Logout error:', error);
-                window.location.href = '/login.html';
-            }
-        }
-
         // Navigation function
         function navigateToPortfolio() {
             alert('Navigating to Personal Portfolio...');
@@ -554,38 +402,14 @@
             alert('Swap functionality will be implemented here');
         }
 
-        // Инициализация при загрузке страницы
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Dashboard initializing...');
-            
-            // Сначала проверяем авторизацию
-            const session = await checkDashboardAuth();
-            if (!session) return;
-
-            // Затем загружаем баланс и подписываемся на обновления
-            await loadUserBalance();
-            await subscribeToBalanceUpdates();
-            
-            // Анимации для элементов
+        // Add some interactive effects
+        document.addEventListener('DOMContentLoaded', function() {
             const assetItems = document.querySelectorAll('.asset-item');
+            
             assetItems.forEach((item, index) => {
                 item.style.animationDelay = `${index * 0.1}s`;
                 item.classList.add('fade-in-up');
             });
-
-            console.log('Dashboard initialized successfully');
-        });
-
-        // Обработка изменения видимости страницы (на случай, если токен обновится в другой вкладке)
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                // При возвращении на вкладку проверяем сессию
-                checkDashboardAuth().then(session => {
-                    if (session) {
-                        loadUserBalance(); // Обновляем баланс
-                    }
-                });
-            }
         });
     </script>
 </body>
