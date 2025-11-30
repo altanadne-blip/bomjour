@@ -496,7 +496,7 @@
 
             if (response.ok) {
                 // NEW: save JWT
-                localStorage.setItem('token', result.token);
+                localStorage.setItem('token', result.access_token);
 
                 // redirect
                 window.location.href = '/dashboard.html';
