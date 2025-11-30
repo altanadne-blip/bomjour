@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "**/*.html", 
+      "src": "**/*.html",
       "use": "@vercel/static"
     }
   ],
@@ -16,7 +16,7 @@
       "dest": "/api/signup.js"
     },
     {
-      "src": "/api/reset", 
+      "src": "/api/reset",
       "dest": "/api/reset.js"
     },
     {
