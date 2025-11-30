@@ -20,9 +20,13 @@
       "dest": "/api/reset.js"
     },
     {
-      "src": "/api/deposits_monitor",
-      "dest": "/api/deposits_monitor.js"
-    },
+  "crons": [
+    {
+      "path": "/api/check-bsc-deposits",
+      "schedule": "*/2 * * * *"
+    }
+  ]
+}
     {
       "src": "/",
       "dest": "/login.html"
