@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
       process.env.SUPABASE_ANON_KEY
     );
 
-    console.log('Fetching user data...');
+    console.log('=== USERDATA API CALL ===');
 
     // Получаем пользователя из токена
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
@@ -37,23 +37,54 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    console.log('User found:', user.email);
+    console.log('User from token:', {
+      id: user.id,
+      email: user.email
+    });
 
-    // Получаем профиль пользователя с балансом
-    const { data: profile, error: profileError } = await supabase
+    // Детальный запрос к profiles
+    console.log('Querying profiles table for user_id:', user.id);
+    
+    const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
-      .single();
+      .eq('id', user.id);
 
-    console.log('Profile query result:', { profile, profileError });
+    console.log('Profiles query result:', {
+      data: profiles,
+      error: profilesError,
+      count: profiles ? profiles.length : 0
+    });
+
+    // Проверим все записи в profiles для отладки
+    const { data: allProfiles, error: allError } = await supabase
+      .from('profiles')
+      .select('*')
+      .limit(10);
+
+    if (!allError) {
+      console.log('First 10 profiles in table:', allProfiles);
+    } else {
+      console.log('Error fetching all profiles:', allError);
+    }
 
     let balance = 0;
+    let profileExists = false;
 
-    if (profileError) {
-      console.log('Profile not found, creating new one for user:', user.id);
+    if (profilesError) {
+      console.error('Error querying profiles:', profilesError);
+    } else if (profiles && profiles.length > 0) {
+      profileExists = true;
+      balance = profiles[0].balance;
+      console.log('Profile found! Balance:', balance, 'Type:', typeof balance);
       
-      // Создаем профиль если его нет
+      // Детальная информация о найденном профиле
+      console.log('Full profile data:', profiles[0]);
+    } else {
+      console.log('No profile found for user:', user.id);
+      
+      // Создаем новый профиль
+      console.log('Creating new profile...');
       const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
         .insert([{ 
@@ -68,25 +99,24 @@ module.exports = async (req, res) => {
 
       if (insertError) {
         console.error('Error creating profile:', insertError);
-        balance = 0;
       } else {
+        console.log('New profile created:', newProfile);
         balance = newProfile.balance || 0;
-        console.log('New profile created with balance:', balance);
       }
-    } else {
-      balance = profile.balance || 0;
-      console.log('Existing profile found with balance:', balance);
     }
 
-    // Возвращаем все данные пользователя
+    // Преобразуем баланс в число на всякий случай
+    balance = parseFloat(balance) || 0;
+
     const responseData = {
       id: user.id,
       email: user.email,
       created_at: user.created_at,
-      balance: balance
+      balance: balance,
+      profile_exists: profileExists
     };
 
-    console.log('Sending response:', responseData);
+    console.log('=== FINAL RESPONSE ===', responseData);
 
     return res.status(200).json(responseData);
 
