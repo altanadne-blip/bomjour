@@ -27,11 +27,4 @@
       "src": "/",
       "dest": "/login.html"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/depositmonitor",
-      "schedule": "*/2 * * * *"
-    }
-  ]
 }
