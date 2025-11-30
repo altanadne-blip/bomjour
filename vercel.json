@@ -20,11 +20,12 @@
       "dest": "/api/reset.js"
     },
     {
-      "src": "/api/depositmonitor",
-      "dest": "/api/depositmonitor.js"
+      "src": "/api/deposits_monitor",
+      "dest": "/api/deposits_monitor.js"
     },
     {
       "src": "/",
       "dest": "/login.html"
     }
+  ]
 }
