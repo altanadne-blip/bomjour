@@ -36,6 +36,32 @@
             letter-spacing: 0.5px;
         }
 
+        .profile-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-email {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: #334155;
+            color: #f1f5f9;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .logout-btn:hover {
+            background: #475569;
+        }
+
         .profile-icon {
             width: 44px;
             height: 44px;
@@ -55,6 +81,50 @@
         .profile-icon:hover {
             transform: scale(1.05);
             box-shadow: 0 4px 15px rgba(129, 140, 248, 0.3);
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 200px;
+            font-size: 18px;
+            color: #94a3b8;
+        }
+
+        .spinner {
+            border: 3px solid #334155;
+            border-top: 3px solid #818cf8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Error State */
+        .error-message {
+            text-align: center;
+            padding: 40px;
+            color: #ef4444;
+            font-size: 16px;
+        }
+
+        .retry-btn {
+            background: #818cf8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 14px;
         }
 
         /* Main Container */
@@ -271,6 +341,12 @@
             .actions-panel {
                 padding: 20px;
             }
+
+            .profile-section {
+                flex-direction: column;
+                gap: 8px;
+                align-items: flex-end;
+            }
         }
 
         @media (max-width: 480px) {
@@ -295,17 +371,21 @@
     <!-- Header -->
     <header class="dashboard-header">
         <div class="logo">InvestPro</div>
-        <div class="profile-icon" onclick="navigateToPortfolio()">👤</div>
+        <div class="profile-section">
+            <span class="user-email" id="userEmail">Loading...</span>
+            <button class="logout-btn" onclick="logout()">Logout</button>
+            <div class="profile-icon" onclick="navigateToPortfolio()">👤</div>
+        </div>
     </header>
 
     <!-- Main Dashboard -->
-    <main class="dashboard-container">
+    <main class="dashboard-container" id="dashboardContent" style="display: none;">
         <!-- Portfolio Section -->
         <section class="portfolio-section fade-in-up">
             <div class="portfolio-header">
                 <h1 class="portfolio-title">Investment Portfolio</h1>
                 <p class="portfolio-subtitle">Your current holdings and performance</p>
-                <div class="total-balance">$24,567.89</div>
+                <div class="total-balance" id="totalBalance">Loading...</div>
             </div>
             
             <div class="assets-list">
@@ -382,7 +462,115 @@
         </aside>
     </main>
 
+    <!-- Loading State -->
+    <div class="loading" id="loadingState">
+        <div class="spinner"></div>
+        Loading dashboard...
+    </div>
+
+    <!-- Error State -->
+    <div class="error-message" id="errorState" style="display: none;">
+        <div>Failed to load dashboard data</div>
+        <button class="retry-btn" onclick="loadDashboardData()">Retry</button>
+        <button class="retry-btn" onclick="logout()" style="background: #ef4444; margin-left: 10px;">Back to Login</button>
+    </div>
+
     <script>
+        let currentUser = null;
+
+        // Проверка JWT токена и загрузка данных
+        async function checkAuthAndLoadData() {
+            const token = localStorage.getItem('token');
+            
+            if (!token) {
+                console.log('No token found, redirecting to login');
+                redirectToLogin();
+                return;
+            }
+
+            try {
+                // Проверяем валидность токена
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const isExpired = Date.now() >= payload.exp * 1000;
+                
+                if (isExpired) {
+                    console.log('Token expired, redirecting to login');
+                    localStorage.removeItem('token');
+                    redirectToLogin();
+                    return;
+                }
+
+                // Загружаем все данные пользователя одним запросом
+                await loadUserData(token);
+                
+                // Показываем dashboard
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('dashboardContent').style.display = 'grid';
+                
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                showError('Authentication failed');
+            }
+        }
+
+        // Загрузка всех данных пользователя
+        async function loadUserData(token) {
+            try {
+                const response = await fetch('/api/userdata', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch user data');
+                }
+
+                const userData = await response.json();
+                currentUser = userData;
+                
+                // Обновляем интерфейс
+                document.getElementById('userEmail').textContent = userData.email;
+                document.getElementById('totalBalance').textContent = 
+                    `$${userData.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                
+                console.log('User data loaded:', userData);
+                
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                throw error;
+            }
+        }
+
+        // Функция для загрузки данных dashboard
+        async function loadDashboardData() {
+            document.getElementById('loadingState').style.display = 'flex';
+            document.getElementById('errorState').style.display = 'none';
+            document.getElementById('dashboardContent').style.display = 'none';
+            
+            await checkAuthAndLoadData();
+        }
+
+        // Показать ошибку
+        function showError(message) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('errorState').style.display = 'block';
+            document.getElementById('errorState').querySelector('div').textContent = message;
+        }
+
+        // Выход
+        function logout() {
+            localStorage.removeItem('token');
+            redirectToLogin();
+        }
+
+        // Редирект на логин
+        function redirectToLogin() {
+            window.location.href = '/login.html';
+        }
+
         // Navigation function
         function navigateToPortfolio() {
             alert('Navigating to Personal Portfolio...');
@@ -402,10 +590,12 @@
             alert('Swap functionality will be implemented here');
         }
 
-        // Add some interactive effects
+        // Инициализация при загрузке страницы
         document.addEventListener('DOMContentLoaded', function() {
-            const assetItems = document.querySelectorAll('.asset-item');
+            loadDashboardData();
             
+            // Add some interactive effects
+            const assetItems = document.querySelectorAll('.asset-item');
             assetItems.forEach((item, index) => {
                 item.style.animationDelay = `${index * 0.1}s`;
                 item.classList.add('fade-in-up');
