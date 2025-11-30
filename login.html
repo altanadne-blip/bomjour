@@ -388,159 +388,162 @@
         <a href="pwreset.html" class="forgot-password">Forgot password?</a>
     </div>
 
-    <script>
-        // Проверка если пользователь уже авторизован
-const supabaseUrl = 'https://your-project.supabase.co';
-const supabaseKey = 'your-anon-key'; 
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+<script>
+  // Password visibility toggle
+  function setupPasswordToggle() {
+      const toggleButtons = document.querySelectorAll('.password-toggle');
+      
+      toggleButtons.forEach(button => {
+          button.addEventListener('click', function() {
+              const passwordInput = this.previousElementSibling;
+              const eyeOpen = this.querySelector('.eye-open');
+              const eyeClosed = this.querySelector('.eye-closed');
+              
+              if (passwordInput.type === 'password') {
+                  passwordInput.type = 'text';
+                  eyeOpen.style.display = 'none';
+                  eyeClosed.style.display = 'block';
+              } else {
+                  passwordInput.type = 'password';
+                  eyeOpen.style.display = 'block';
+                  eyeClosed.style.display = 'none';
+              }
+          });
+      });
+  }
 
-// Проверяем сессию при загрузке
-supabase.auth.getSession().then(({ data: { session } }) => {
-    if (session) {
-        window.location.href = '/dashboard.html';
-    }
-});
-        // Password visibility toggle
-        function setupPasswordToggle() {
-            const toggleButtons = document.querySelectorAll('.password-toggle');
-            
-            toggleButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const passwordInput = this.previousElementSibling;
-                    const eyeOpen = this.querySelector('.eye-open');
-                    const eyeClosed = this.querySelector('.eye-closed');
-                    
-                    if (passwordInput.type === 'password') {
-                        passwordInput.type = 'text';
-                        eyeOpen.style.display = 'none';
-                        eyeClosed.style.display = 'block';
-                    } else {
-                        passwordInput.type = 'password';
-                        eyeOpen.style.display = 'block';
-                        eyeClosed.style.display = 'none';
-                    }
-                });
-            });
-        }
+  // Tab switching functionality
+  const tabs = document.querySelectorAll('.tab');
+  const forms = document.querySelectorAll('.auth-form');
+  const authContainer = document.getElementById('authContainer');
 
-        // Tab switching functionality
-        const tabs = document.querySelectorAll('.tab');
-        const forms = document.querySelectorAll('.auth-form');
-        const authContainer = document.getElementById('authContainer');
+  function switchTab(targetTab) {
+      tabs.forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active');
+      
+      forms.forEach(form => {
+          form.classList.remove('active');
+          if (form.id === `${targetTab}Form`) {
+              setTimeout(() => {
+                  form.classList.add('active');
+                  form.classList.add('fade-in');
+              }, 50);
+          }
+      });
 
-        function switchTab(targetTab) {
-            tabs.forEach(t => t.classList.remove('active'));
-            document.querySelector(`[data-tab="${targetTab}"]`).classList.add('active');
-            
-            forms.forEach(form => {
-                form.classList.remove('active');
-                if (form.id === `${targetTab}Form`) {
-                    setTimeout(() => {
-                        form.classList.add('active');
-                        form.classList.add('fade-in');
-                    }, 50);
-                }
-            });
+      if (targetTab === 'signup') {
+          authContainer.classList.add('signup-active');
+      } else {
+          authContainer.classList.remove('signup-active');
+      }
 
-            if (targetTab === 'signup') {
-                authContainer.classList.add('signup-active');
-            } else {
-                authContainer.classList.remove('signup-active');
-            }
+      setTimeout(() => {
+          forms.forEach(form => form.classList.remove('fade-in'));
+      }, 400);
+  }
 
-            setTimeout(() => {
-                forms.forEach(form => form.classList.remove('fade-in'));
-            }, 400);
-        }
+  // Функция регистрации
+  async function signUp() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const messageElement = document.getElementById('message');
+      const submitBtn = document.querySelector('#signupForm .submit-btn');
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating Account...';
 
-        // Функция регистрации
-        async function signUp() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const messageElement = document.getElementById('message');
-            
-            console.log('Signing up with email:', email, 'and password:', password);
+      try {
+          const { data, error } = await supabase.auth.signUp({
+              email: email,
+              password: password,
+              options: {
+                  data: {
+                      email: email
+                  }
+              }
+          });
 
-            try {
-                const response = await fetch('/api/signup', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password})
-                });
+          if (error) {
+              messageElement.textContent = 'Error: ' + error.message;
+              messageElement.className = 'message error';
+          } else {
+              messageElement.textContent = 'Success! Check your email for verification.';
+              messageElement.className = 'message';
+          }
+      } catch (error) {
+          messageElement.textContent = 'Network error: ' + error.message;
+          messageElement.className = 'message error';
+      } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Account';
+      }
+  }
 
-                console.log('Response status:', response.status);
-                const result = await response.json();
-                console.log('Response result:', result);
+  // Функция логина
+  async function login() {
+      const email = document.getElementById('login-email').value;
+      const password = document.getElementById('login-password').value;
+      const messageElement = document.getElementById('login-message');
+      const submitBtn = document.querySelector('#loginForm .submit-btn');
+      
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Signing In...';
 
-                if (response.ok) {
-                    messageElement.textContent = 'Success! Check email.';
-                    messageElement.className = 'message';
-                } else {
-                    messageElement.textContent = 'Error: ' + result.error;
-                    messageElement.className = 'message error';
-                }
-            } catch (error) {
-                console.log('Network error:', error);
-                messageElement.textContent = 'Network error';
-                messageElement.className = 'message error';
-            }
-        }
+      try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password
+          });
 
-        // Функция логина
-        async function login() {
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            const messageElement = document.getElementById('login-message');
-            
-            console.log('Logging in with email:', email, 'and password:', password);
+          if (error) {
+              messageElement.textContent = 'Error: ' + error.message;
+              messageElement.className = 'message error';
+          } else {
+              // Редирект на dashboard после успешного логина
+              window.location.href = '/dashboard.html';
+          }
+      } catch (error) {
+          messageElement.textContent = 'Network error: ' + error.message;
+          messageElement.className = 'message error';
+      } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Login to Account';
+      }
+  }
 
-            try {
-                const response = await fetch('/api/signup', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email, password, login: true})
-                });
+  // Проверка существующей сессии
+  async function checkAuth() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+          window.location.href = '/dashboard.html';
+      }
+  }
 
-                console.log('Response status:', response.status);
-                const result = await response.json();
-                console.log('Response result:', result);
+  // Form submission handlers
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      login();
+  });
 
-                if (response.ok) {
-                    window.location.href = '/dashboard.html';
-                } else {
-                    messageElement.textContent = 'Error: ' + result.error;
-                    messageElement.className = 'message error';
-                }
-            } catch (error) {
-                console.log('Network error:', error);
-                messageElement.textContent = 'Network error';
-                messageElement.className = 'message error';
-            }
-        }
+  document.getElementById('signupForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      signUp();
+  });
 
-        // Form submission handlers
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            login();
-        });
-
-        document.getElementById('signupForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            signUp();
-        });
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupPasswordToggle();
-            
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    const targetTab = tab.getAttribute('data-tab');
-                    switchTab(targetTab);
-                });
-            });
-        });
-    </script>
+  // Initialize
+  document.addEventListener('DOMContentLoaded', function() {
+      setupPasswordToggle();
+      checkAuth(); // Проверяем сессию при загрузке
+      
+      tabs.forEach(tab => {
+          tab.addEventListener('click', () => {
+              const targetTab = tab.getAttribute('data-tab');
+              switchTab(targetTab);
+          });
+      });
+  });
+</script>
+    
 </body>
 </html>
 
