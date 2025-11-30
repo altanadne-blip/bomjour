@@ -389,6 +389,17 @@
     </div>
 
     <script>
+        // Проверка если пользователь уже авторизован
+const supabaseUrl = 'https://your-project.supabase.co';
+const supabaseKey = 'your-anon-key'; 
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+// Проверяем сессию при загрузке
+supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+        window.location.href = '/dashboard.html';
+    }
+});
         // Password visibility toggle
         function setupPasswordToggle() {
             const toggleButtons = document.querySelectorAll('.password-toggle');
@@ -532,4 +543,5 @@
     </script>
 </body>
 </html>
+
 
