@@ -37,10 +37,11 @@ module.exports = async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    console.log('User from token:', {
-      id: user.id,
-      email: user.email
-    });
+    console.log('User from token:');
+    console.log('  ID:', user.id);
+    console.log('  Email:', user.email);
+    console.log('  ID Type:', typeof user.id);
+    console.log('  ID Length:', user.id.length);
 
     // Детальный запрос к profiles
     console.log('Querying profiles table for user_id:', user.id);
@@ -50,70 +51,95 @@ module.exports = async (req, res) => {
       .select('*')
       .eq('id', user.id);
 
-    console.log('Profiles query result:', {
-      data: profiles,
-      error: profilesError,
-      count: profiles ? profiles.length : 0
-    });
+    console.log('Profiles query result:');
+    console.log('  Data:', profiles);
+    console.log('  Error:', profilesError);
+    console.log('  Count:', profiles ? profiles.length : 0);
 
-    // Проверим все записи в profiles для отладки
-    const { data: allProfiles, error: allError } = await supabase
-      .from('profiles')
-      .select('*')
-      .limit(10);
-
-    if (!allError) {
-      console.log('First 10 profiles in table:', allProfiles);
-    } else {
-      console.log('Error fetching all profiles:', allError);
+    if (profilesError) {
+      console.error('❌ PROFILE QUERY ERROR:', profilesError);
+      console.log('Error details:', {
+        message: profilesError.message,
+        details: profilesError.details,
+        hint: profilesError.hint,
+        code: profilesError.code
+      });
     }
 
     let balance = 0;
     let profileExists = false;
 
-    if (profilesError) {
-      console.error('Error querying profiles:', profilesError);
-    } else if (profiles && profiles.length > 0) {
+    if (profiles && profiles.length > 0) {
       profileExists = true;
       balance = profiles[0].balance;
-      console.log('Profile found! Balance:', balance, 'Type:', typeof balance);
-      
-      // Детальная информация о найденном профиле
-      console.log('Full profile data:', profiles[0]);
+      console.log('✅ PROFILE FOUND!');
+      console.log('  Balance:', balance);
+      console.log('  Balance type:', typeof balance);
+      console.log('  Full profile data:', profiles[0]);
     } else {
-      console.log('No profile found for user:', user.id);
-      
-      // Создаем новый профиль
-      console.log('Creating new profile...');
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert([{ 
-          id: user.id, 
-          email: user.email,
-          balance: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Error creating profile:', insertError);
-      } else {
-        console.log('New profile created:', newProfile);
-        balance = newProfile.balance || 0;
-      }
+      console.log('❌ NO PROFILE FOUND in query results');
+      console.log('  User ID we searched for:', user.id);
+      console.log('  User ID type:', typeof user.id);
     }
 
-    // Преобразуем баланс в число на всякий случай
-    balance = parseFloat(balance) || 0;
+    // ПРЯМОЙ ЗАПРОС - попробуем найти любую запись в profiles
+    console.log('=== CHECKING ALL PROFILES ===');
+    const { data: allProfiles, error: allError } = await supabase
+      .from('profiles')
+      .select('*')
+      .limit(10);
+
+    if (!allError && allProfiles) {
+      console.log(`📊 Found ${allProfiles.length} profiles in table:`);
+      allProfiles.forEach((profile, index) => {
+        console.log(`  ${index + 1}. ID: ${profile.id}`);
+        console.log(`     Email: ${profile.email}`);
+        console.log(`     Balance: ${profile.balance}`);
+        console.log(`     ID Type: ${typeof profile.id}`);
+        console.log(`     ID Length: ${profile.id.length}`);
+        
+        // Проверим совпадает ли ID
+        const isMatch = profile.id === user.id;
+        console.log(`     ID MATCH: ${isMatch}`);
+        
+        if (isMatch) {
+          console.log(`     🎯 THIS IS OUR USER! Balance should be: ${profile.balance}`);
+        }
+      });
+    } else {
+      console.log('Error fetching all profiles:', allError);
+    }
+
+    // Если профиль не найден, но мы знаем что он существует - это проблема с запросом
+    if (!profileExists) {
+      console.log('🚨 PROFILE EXISTS BUT NOT FOUND BY QUERY!');
+      console.log('This indicates a problem with the Supabase query or data types');
+      
+      // Попробуем альтернативный запрос
+      console.log('=== TRYING ALTERNATIVE QUERY ===');
+      const { data: altProfiles, error: altError } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('id', user.id); // Используем ilike вместо eq
+
+      console.log('Alternative query result:', {
+        data: altProfiles,
+        error: altError,
+        count: altProfiles ? altProfiles.length : 0
+      });
+    }
 
     const responseData = {
       id: user.id,
       email: user.email,
       created_at: user.created_at,
       balance: balance,
-      profile_exists: profileExists
+      profile_exists: profileExists,
+      debug: {
+        query_count: profiles ? profiles.length : 0,
+        all_profiles_count: allProfiles ? allProfiles.length : 0,
+        user_id: user.id
+      }
     };
 
     console.log('=== FINAL RESPONSE ===', responseData);
