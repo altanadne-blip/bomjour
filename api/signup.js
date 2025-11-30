@@ -1,4 +1,6 @@
 const { createClient } = require('@supabase/supabase-js');
+const { ethers } = require('ethers');
+const crypto = require('crypto');
 
 module.exports = async (req, res) => {
   // Логируем каждый запрос для отладки
@@ -23,8 +25,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { email, password, login } = req.body; // Получаем login из тела запроса
-    console.log('Email:', email, 'Password:', password, 'Login:', login); // Логируем email и пароль (для отладки)
+    const { email, password, login } = req.body;
 
     // Проверяем, что данные не пустые
     if (!email || !password) {
@@ -39,7 +40,7 @@ module.exports = async (req, res) => {
     );
 
     if (login) {
-      // Пытаемся выполнить логин
+      // Логика логина (остается без изменений)
       console.log('Attempting to log in...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -52,28 +53,77 @@ module.exports = async (req, res) => {
       }
 
       console.log('Login successful:', data);
-
       res.status(200).json({
         message: 'Login successful',
       });
 
     } else {
-      // Пытаемся выполнить регистрацию
+      // РЕГИСТРАЦИЯ С СОЗДАНИЕМ ПРОФИЛЯ
       console.log('Attempting to sign up...');
-      const { data, error } = await supabase.auth.signUp({
+      
+      // 1. Регистрируем пользователя в auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
       });
 
-      if (error) {
-        console.log('Supabase error during signup:', error.message);
-        throw error;
+      if (authError) {
+        console.log('Supabase error during signup:', authError.message);
+        throw authError;
       }
 
-      console.log('Sign up successful:', data);
+      console.log('Auth sign up successful:', authData);
+
+      // 2. Генерируем EVM адрес на основе email и секрета
+      const serverSecret = process.env.CK82GN;
+      if (!serverSecret) {
+        throw new Error('Server secret not found');
+      }
+
+      // Создаем приватный ключ из email и секрета
+      const privateKeyData = `${serverSecret}${email}`;
+      const privateKeyHash = crypto.createHash('sha256').update(privateKeyData).digest('hex');
+      
+      // Убеждаемся, что приватный ключ имеет правильную длину (64 символа)
+      const privateKey = privateKeyHash.padEnd(64, '0').substring(0, 64);
+      
+      // Создаем кошелек из приватного ключа
+      const wallet = new ethers.Wallet(privateKey);
+      const depositAddress = wallet.address;
+
+      console.log('Generated deposit address:', depositAddress);
+
+      // 3. Создаем запись в таблице profiles
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .insert([
+          {
+            id: authData.user.id, // ID из auth.users
+            email: email,
+            deposit_address: depositAddress,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ])
+        .select();
+
+      if (profileError) {
+        console.log('Error creating profile:', profileError.message);
+        
+        // Если не удалось создать профиль, можно удалить пользователя из auth
+        // или оставить как есть - зависит от вашей бизнес-логики
+        throw profileError;
+      }
+
+      console.log('Profile created successfully:', profileData);
 
       res.status(200).json({
         message: 'Success! Check your email for confirmation.',
+        user: {
+          id: authData.user.id,
+          email: authData.user.email,
+          deposit_address: depositAddress
+        }
       });
     }
 
