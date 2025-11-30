@@ -6,7 +6,7 @@
       "use": "@vercel/node"
     },
     {
-      "src": "**/*.html",
+      "src": "**/*.html", 
       "use": "@vercel/static"
     }
   ],
@@ -16,20 +16,22 @@
       "dest": "/api/signup.js"
     },
     {
-      "src": "/api/reset",
+      "src": "/api/reset", 
       "dest": "/api/reset.js"
     },
     {
-  "crons": [
-    {
-      "path": "/api/deposits_monitor.js",
-      "schedule": "*/2 * * * *"
-    }
-  ]
-}
+      "src": "/api/deposits_monitor",
+      "dest": "/api/deposits_monitor.js"
+    },
     {
       "src": "/",
       "dest": "/login.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/deposits_monitor",
+      "schedule": "*/2 * * * *"
     }
   ]
 }
