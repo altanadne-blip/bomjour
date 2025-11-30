@@ -22,7 +22,7 @@
     {
   "crons": [
     {
-      "path": "/api/deposits_monitor",
+      "path": "/api/deposits_monitor.js",
       "schedule": "*/2 * * * *"
     }
   ]
