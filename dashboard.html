@@ -305,7 +305,7 @@
             <div class="portfolio-header">
                 <h1 class="portfolio-title">Investment Portfolio</h1>
                 <p class="portfolio-subtitle">Your current holdings and performance</p>
-                <div class="total-balance">$24,567.89</div>
+                <div class="total-balance" id="userBalance">$0.00</div>
             </div>
             
             <div class="assets-list">
@@ -412,5 +412,74 @@
             });
         });
     </script>
+    <script>
+    // Добавь Supabase клиент (в самом начале скрипта)
+    const supabaseUrl = 'https://your-project.supabase.co';
+    const supabaseKey = 'your-anon-key';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // Функция загрузки баланса
+    async function loadUserBalance() {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (user) {
+                // Получаем баланс пользователя
+                const { data: profile, error } = await supabase
+                    .from('profiles')
+                    .select('balance')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!error && profile) {
+                    document.getElementById('userBalance').textContent = 
+                        `$${parseFloat(profile.balance || 0).toFixed(2)}`;
+                }
+            }
+        } catch (error) {
+            console.error('Error loading balance:', error);
+        }
+    }
+
+    // Real-time подписка на изменения баланса
+    function subscribeToBalanceUpdates() {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+            supabase
+                .channel('balance-changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: 'profiles',
+                        filter: `id=eq.${user.id}`
+                    },
+                    (payload) => {
+                        // Автоматическое обновление баланса при изменении в БД
+                        const newBalance = payload.new.balance;
+                        document.getElementById('userBalance').textContent = 
+                            `$${parseFloat(newBalance || 0).toFixed(2)}`;
+                        console.log('Balance updated:', newBalance);
+                    }
+                )
+                .subscribe();
+        }
+    }
+
+    // Инициализация при загрузке страницы
+    document.addEventListener('DOMContentLoaded', function() {
+        loadUserBalance();
+        subscribeToBalanceUpdates();
+        
+        // Остальной существующий код...
+        const assetItems = document.querySelectorAll('.asset-item');
+        assetItems.forEach((item, index) => {
+            item.style.animationDelay = `${index * 0.1}s`;
+            item.classList.add('fade-in-up');
+        });
+    });
+</script>
 </body>
 </html>
