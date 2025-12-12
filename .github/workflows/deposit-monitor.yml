@@ -1,0 +1,291 @@
+name: USDT Deposit Monitor
+
+on:
+  schedule:
+    # Запускать каждые 10 минут
+    - cron: '*/10 * * * *'
+  # Для ручного запуска из GitHub UI
+  workflow_dispatch:
+    inputs:
+      log_level:
+        description: 'Log level'
+        required: false
+        default: 'info'
+        type: choice
+        options:
+          - info
+          - debug
+          - warning
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        # Создаем минимальный package.json если его нет
+        if [ ! -f package.json ]; then
+          echo '{"name":"deposit-monitor","version":"1.0.0","private":true}' > package.json
+        fi
+        npm install ethers@6.7.0 @supabase/supabase-js@2.39.0
+    
+    - name: Run USDT Deposit Monitor
+      id: monitor
+      env:
+        BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        LOG_LEVEL: ${{ inputs.log_level || 'info' }}
+      run: |
+        cat > monitor.js << 'EOF'
+        const { createClient } = require('@supabase/supabase-js');
+        const { ethers } = require('ethers');
+
+        // USDT контракт на BSC
+        const USDT_ABI = [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ];
+        const USDT_ADDRESS = "0x55d398326f99059fF775485246999027B3197955";
+
+        async function runMonitor() {
+          console.log('🚀 === USDT DEPOSIT MONITOR STARTED ===');
+          console.log('⏰ Time:', new Date().toISOString());
+          console.log('🔧 Mode:', process.env.LOG_LEVEL || 'info');
+          
+          try {
+            // Проверяем переменные окружения
+            if (!process.env.BSC_RPC_URL) {
+              throw new Error('BSC_RPC_URL not found in environment variables');
+            }
+            if (!process.env.SUPABASE_URL) {
+              throw new Error('SUPABASE_URL not found in environment variables');
+            }
+            if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+              throw new Error('SUPABASE_SERVICE_ROLE_KEY not found in environment variables');
+            }
+
+            const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
+            const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, provider);
+            
+            const supabase = createClient(
+              process.env.SUPABASE_URL,
+              process.env.SUPABASE_SERVICE_ROLE_KEY
+            );
+
+            // Получаем все адреса пользователей
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('deposit_address, id, email, balance');
+
+            if (profilesError) throw profilesError;
+
+            console.log(`📊 Checking ${profiles.length} addresses for USDT...`);
+
+            let newDepositsCount = 0;
+            let totalChecked = 0;
+            const results = [];
+            const errors = [];
+            
+            // Получаем decimals USDT
+            const decimals = await usdtContract.decimals();
+            
+            // Проверяем USDT балансы
+            for (const profile of profiles) {
+              try {
+                if (process.env.LOG_LEVEL === 'debug') {
+                  console.log(`🔍 Checking: ${profile.deposit_address.substring(0, 10)}... (${profile.email})`);
+                }
+                
+                const usdtBalance = await usdtContract.balanceOf(profile.deposit_address);
+                const usdtBalanceFormatted = ethers.formatUnits(usdtBalance, decimals);
+                const usdtBalanceNumber = parseFloat(usdtBalanceFormatted);
+                
+                if (process.env.LOG_LEVEL === 'debug') {
+                  console.log(`   Balance: ${usdtBalanceFormatted} USDT`);
+                }
+                
+                if (usdtBalance > 0) {
+                  // Проверяем есть ли уже депозит для этого адреса
+                  const { data: existingDeposits } = await supabase
+                    .from('deposits')
+                    .select('id')
+                    .eq('user_id', profile.id)
+                    .eq('token_address', USDT_ADDRESS.toLowerCase());
+
+                  if (!existingDeposits || existingDeposits.length === 0) {
+                    console.log(`💰 New deposit detected for ${profile.email}: ${usdtBalanceFormatted} USDT`);
+                    
+                    // Вычисляем новый баланс (обрабатываем null значение)
+                    const currentBalance = profile.balance ? parseFloat(profile.balance) : 0;
+                    const newBalance = currentBalance + usdtBalanceNumber;
+                    
+                    // Создаем запись о депозите
+                    const { error: insertError } = await supabase
+                      .from('deposits')
+                      .insert([
+                        {
+                          user_id: profile.id,
+                          tx_hash: `manual_${Date.now()}_${profile.id}`,
+                          amount: usdtBalance.toString(),
+                          amount_usd: usdtBalanceNumber,
+                          status: 'confirmed',
+                          network: 'bsc',
+                          token_address: USDT_ADDRESS.toLowerCase(),
+                          token_symbol: 'USDT',
+                          confirmations: 12,
+                          confirmed_at: new Date().toISOString()
+                        }
+                      ]);
+
+                    if (!insertError) {
+                      // Обновляем баланс пользователя в profiles
+                      const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({ 
+                          balance: newBalance.toString()
+                        })
+                        .eq('id', profile.id);
+
+                      if (updateError) {
+                        console.error(`❌ Error updating balance for ${profile.email}:`, updateError.message);
+                        errors.push(`Balance update failed for ${profile.email}`);
+                        
+                        // Отменяем депозит если не удалось обновить баланс
+                        await supabase
+                          .from('deposits')
+                          .delete()
+                          .eq('user_id', profile.id)
+                          .like('tx_hash', `manual_%_${profile.id}`);
+                      } else {
+                        newDepositsCount++;
+                        results.push({
+                          user: profile.email,
+                          address: profile.deposit_address,
+                          amount: usdtBalanceFormatted,
+                          token: 'USDT',
+                          old_balance: currentBalance,
+                          new_balance: newBalance
+                        });
+                        console.log(`✅ Deposit recorded for ${profile.email}. Balance updated: ${currentBalance} → ${newBalance}`);
+                      }
+                    } else {
+                      console.error(`❌ Error inserting deposit for ${profile.email}:`, insertError.message);
+                      errors.push(`Deposit insert failed for ${profile.email}`);
+                    }
+                  } else {
+                    if (process.env.LOG_LEVEL === 'debug') {
+                      console.log(`ℹ️  Deposit already exists for ${profile.email}`);
+                    }
+                  }
+                }
+                
+                totalChecked++;
+                
+                // Задержка чтобы не превысить лимиты RPC
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+              } catch (error) {
+                console.error(`⚠️  Error checking ${profile.deposit_address}: ${error.message}`);
+                errors.push(`Check failed for ${profile.email}: ${error.message}`);
+                continue;
+              }
+            }
+
+            console.log('\n' + '='.repeat(60));
+            console.log('📈 MONITORING REPORT');
+            console.log('='.repeat(60));
+            console.log(`✅ Total addresses checked: ${totalChecked}`);
+            console.log(`💰 New deposits found: ${newDepositsCount}`);
+            console.log(`⏰ Completed at: ${new Date().toISOString()}`);
+            
+            if (results.length > 0) {
+              console.log('\n🎉 NEW DEPOSITS FOUND:');
+              results.forEach((result, index) => {
+                console.log(`${index + 1}. ${result.user}: ${result.amount} USDT`);
+              });
+            }
+            
+            if (errors.length > 0) {
+              console.log('\n⚠️  ERRORS ENCOUNTERED:');
+              errors.forEach((error, index) => {
+                console.log(`${index + 1}. ${error}`);
+              });
+            }
+            
+            console.log('\n✅ === USDT DEPOSIT MONITOR COMPLETED ===\n');
+            
+            // Сохраняем результаты для следующего шага
+            if (process.env.GITHUB_OUTPUT) {
+              const fs = require('fs');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_checked=${totalChecked}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_deposits=${newDepositsCount}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_count=${errors.length}\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `completed_at=${new Date().toISOString()}\n`);
+            }
+            
+            // Если есть ошибки, завершаем с кодом 1
+            if (errors.length > 0) {
+              process.exit(1);
+            }
+            
+          } catch (error) {
+            console.error('❌ CRITICAL ERROR:', error.message);
+            console.error('Stack:', error.stack);
+            if (process.env.GITHUB_OUTPUT) {
+              const fs = require('fs');
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `critical_error=true\n`);
+              fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_message=${error.message}\n`);
+            }
+            process.exit(1);
+          }
+        }
+
+        // Запускаем монитор
+        runMonitor();
+        EOF
+        
+        node monitor.js
+    
+    - name: Save monitoring results as artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: deposit-monitor-logs
+        path: |
+          ${{ github.workspace }}/monitor.js
+        retention-days: 7
+    
+    - name: Create summary report
+      if: always()
+      run: |
+        echo "# 📊 Deposit Monitor Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Results" >> $GITHUB_STEP_SUMMARY
+        echo "- ✅ **Total addresses checked:** ${{ steps.monitor.outputs.total_checked || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- 💰 **New deposits found:** ${{ steps.monitor.outputs.new_deposits || '0' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- ⚠️  **Errors encountered:** ${{ steps.monitor.outputs.error_count || '0' }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Status" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.monitor.outcome }}" == "success" ]; then
+          echo "🟢 **SUCCESS** - Monitor completed successfully" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "🔴 **FAILED** - Monitor encountered errors" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Error:** ${{ steps.monitor.outputs.error_message || 'Unknown error' }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "*Report generated automatically by GitHub Actions*" >> $GITHUB_STEP_SUMMARY
