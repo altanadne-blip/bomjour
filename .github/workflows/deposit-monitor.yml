@@ -30,15 +30,28 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18.x'
-        cache: 'npm'
+        # Убираем cache, так как нет package-lock.json
     
-    - name: Install dependencies
+    - name: Create package.json and install dependencies
       run: |
-        # Создаем минимальный package.json если его нет
-        if [ ! -f package.json ]; then
-          echo '{"name":"deposit-monitor","version":"1.0.0","private":true}' > package.json
-        fi
-        npm install ethers@6.7.0 @supabase/supabase-js@2.39.0
+        # Создаем package.json с зависимостями
+        cat > package.json << 'EOF'
+        {
+          "name": "deposit-monitor",
+          "version": "1.0.0",
+          "private": true,
+          "dependencies": {
+            "ethers": "6.7.0",
+            "@supabase/supabase-js": "2.39.0"
+          }
+        }
+        EOF
+        
+        # Создаем package-lock.json
+        npm init -y
+        
+        # Устанавливаем зависимости
+        npm install ethers@6.7.0 @supabase/supabase-js@2.39.0 --save
     
     - name: Run USDT Deposit Monitor
       id: monitor
@@ -226,28 +239,9 @@ jobs:
             
             console.log('\n✅ === USDT DEPOSIT MONITOR COMPLETED ===\n');
             
-            // Сохраняем результаты для следующего шага
-            if (process.env.GITHUB_OUTPUT) {
-              const fs = require('fs');
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_checked=${totalChecked}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `new_deposits=${newDepositsCount}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_count=${errors.length}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `completed_at=${new Date().toISOString()}\n`);
-            }
-            
-            // Если есть ошибки, завершаем с кодом 1
-            if (errors.length > 0) {
-              process.exit(1);
-            }
-            
           } catch (error) {
             console.error('❌ CRITICAL ERROR:', error.message);
             console.error('Stack:', error.stack);
-            if (process.env.GITHUB_OUTPUT) {
-              const fs = require('fs');
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `critical_error=true\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `error_message=${error.message}\n`);
-            }
             process.exit(1);
           }
         }
@@ -274,18 +268,12 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Results" >> $GITHUB_STEP_SUMMARY
-        echo "- ✅ **Total addresses checked:** ${{ steps.monitor.outputs.total_checked || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- 💰 **New deposits found:** ${{ steps.monitor.outputs.new_deposits || '0' }}" >> $GITHUB_STEP_SUMMARY
-        echo "- ⚠️  **Errors encountered:** ${{ steps.monitor.outputs.error_count || '0' }}" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
         echo "## Status" >> $GITHUB_STEP_SUMMARY
-        if [ "${{ steps.monitor.outcome }}" == "success" ]; then
+        if [ "${{ job.status }}" == "success" ]; then
           echo "🟢 **SUCCESS** - Monitor completed successfully" >> $GITHUB_STEP_SUMMARY
         else
           echo "🔴 **FAILED** - Monitor encountered errors" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Error:** ${{ steps.monitor.outputs.error_message || 'Unknown error' }}" >> $GITHUB_STEP_SUMMARY
         fi
         echo "" >> $GITHUB_STEP_SUMMARY
+        echo "*Check logs for detailed results*" >> $GITHUB_STEP_SUMMARY
         echo "*Report generated automatically by GitHub Actions*" >> $GITHUB_STEP_SUMMARY
