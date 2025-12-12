@@ -29,29 +29,40 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18.x'
-        # Убираем cache, так как нет package-lock.json
+        node-version: '18'
     
-    - name: Create package.json and install dependencies
+    - name: Install dependencies
       run: |
-        # Создаем package.json с зависимостями
-        cat > package.json << 'EOF'
-        {
-          "name": "deposit-monitor",
-          "version": "1.0.0",
-          "private": true,
-          "dependencies": {
-            "ethers": "6.7.0",
-            "@supabase/supabase-js": "2.39.0"
-          }
-        }
-        EOF
-        
-        # Создаем package-lock.json
         npm init -y
+        npm install ethers@6.7.0 @supabase/supabase-js@2.39.0
+    
+    - name: Test environment variables
+      env:
+        BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      run: |
+        echo "🔧 Testing environment variables..."
+        echo "BSC_RPC_URL: ${#BSC_RPC_URL} chars"
+        echo "SUPABASE_URL: ${#SUPABASE_URL} chars"
+        echo "SUPABASE_SERVICE_ROLE_KEY: ${#SUPABASE_SERVICE_ROLE_KEY} chars"
         
-        # Устанавливаем зависимости
-        npm install ethers@6.7.0 @supabase/supabase-js@2.39.0 --save
+        if [ -z "$BSC_RPC_URL" ]; then
+          echo "❌ BSC_RPC_URL is empty!"
+          exit 1
+        fi
+        
+        if [ -z "$SUPABASE_URL" ]; then
+          echo "❌ SUPABASE_URL is empty!"
+          exit 1
+        fi
+        
+        if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+          echo "❌ SUPABASE_SERVICE_ROLE_KEY is empty!"
+          exit 1
+        fi
+        
+        echo "✅ All environment variables are set!"
     
     - name: Run USDT Deposit Monitor
       id: monitor
@@ -79,6 +90,11 @@ jobs:
           
           try {
             // Проверяем переменные окружения
+            console.log('🔍 Checking environment variables...');
+            console.log('BSC_RPC_URL length:', process.env.BSC_RPC_URL?.length || 'not set');
+            console.log('SUPABASE_URL length:', process.env.SUPABASE_URL?.length || 'not set');
+            console.log('SUPABASE_SERVICE_ROLE_KEY length:', process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 'not set');
+            
             if (!process.env.BSC_RPC_URL) {
               throw new Error('BSC_RPC_URL not found in environment variables');
             }
@@ -89,22 +105,29 @@ jobs:
               throw new Error('SUPABASE_SERVICE_ROLE_KEY not found in environment variables');
             }
 
+            console.log('✅ All environment variables are valid');
+            
             const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL);
             const usdtContract = new ethers.Contract(USDT_ADDRESS, USDT_ABI, provider);
             
+            console.log('🔗 Connecting to Supabase...');
             const supabase = createClient(
               process.env.SUPABASE_URL,
               process.env.SUPABASE_SERVICE_ROLE_KEY
             );
 
             // Получаем все адреса пользователей
+            console.log('📋 Fetching user profiles...');
             const { data: profiles, error: profilesError } = await supabase
               .from('profiles')
               .select('deposit_address, id, email, balance');
 
-            if (profilesError) throw profilesError;
+            if (profilesError) {
+              console.error('❌ Supabase error:', profilesError);
+              throw profilesError;
+            }
 
-            console.log(`📊 Checking ${profiles.length} addresses for USDT...`);
+            console.log(`📊 Found ${profiles.length} user addresses to check`);
 
             let newDepositsCount = 0;
             let totalChecked = 0;
@@ -112,9 +135,12 @@ jobs:
             const errors = [];
             
             // Получаем decimals USDT
+            console.log('🔢 Getting USDT decimals...');
             const decimals = await usdtContract.decimals();
+            console.log(`USDT decimals: ${decimals}`);
             
             // Проверяем USDT балансы
+            console.log('🔍 Starting balance checks...');
             for (const profile of profiles) {
               try {
                 if (process.env.LOG_LEVEL === 'debug') {
@@ -158,7 +184,8 @@ jobs:
                           token_address: USDT_ADDRESS.toLowerCase(),
                           token_symbol: 'USDT',
                           confirmations: 12,
-                          confirmed_at: new Date().toISOString()
+                          confirmed_at: new Date().toISOString(),
+                          created_at: new Date().toISOString()
                         }
                       ]);
 
@@ -167,7 +194,8 @@ jobs:
                       const { error: updateError } = await supabase
                         .from('profiles')
                         .update({ 
-                          balance: newBalance.toString()
+                          balance: newBalance.toString(),
+                          updated_at: new Date().toISOString()
                         })
                         .eq('id', profile.id);
 
@@ -202,15 +230,19 @@ jobs:
                       console.log(`ℹ️  Deposit already exists for ${profile.email}`);
                     }
                   }
+                } else {
+                  if (process.env.LOG_LEVEL === 'debug') {
+                    console.log(`   No balance for ${profile.email}`);
+                  }
                 }
                 
                 totalChecked++;
                 
                 // Задержка чтобы не превысить лимиты RPC
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
               } catch (error) {
-                console.error(`⚠️  Error checking ${profile.deposit_address}: ${error.message}`);
+                console.error(`⚠️  Error checking ${profile.deposit_address}:`, error.message);
                 errors.push(`Check failed for ${profile.email}: ${error.message}`);
                 continue;
               }
@@ -221,20 +253,24 @@ jobs:
             console.log('='.repeat(60));
             console.log(`✅ Total addresses checked: ${totalChecked}`);
             console.log(`💰 New deposits found: ${newDepositsCount}`);
+            console.log(`⚠️  Errors encountered: ${errors.length}`);
             console.log(`⏰ Completed at: ${new Date().toISOString()}`);
             
             if (results.length > 0) {
               console.log('\n🎉 NEW DEPOSITS FOUND:');
               results.forEach((result, index) => {
-                console.log(`${index + 1}. ${result.user}: ${result.amount} USDT`);
+                console.log(`${index + 1}. ${result.user}: ${result.amount} USDT (${result.old_balance} → ${result.new_balance})`);
               });
             }
             
             if (errors.length > 0) {
               console.log('\n⚠️  ERRORS ENCOUNTERED:');
-              errors.forEach((error, index) => {
+              errors.slice(0, 5).forEach((error, index) => {
                 console.log(`${index + 1}. ${error}`);
               });
+              if (errors.length > 5) {
+                console.log(`... and ${errors.length - 5} more errors`);
+              }
             }
             
             console.log('\n✅ === USDT DEPOSIT MONITOR COMPLETED ===\n');
@@ -250,6 +286,7 @@ jobs:
         runMonitor();
         EOF
         
+        echo "📄 Monitor script created, starting execution..."
         node monitor.js
     
     - name: Save monitoring results as artifact
@@ -267,13 +304,21 @@ jobs:
         echo "# 📊 Deposit Monitor Report" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Run Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**Trigger:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "## Status" >> $GITHUB_STEP_SUMMARY
+        
         if [ "${{ job.status }}" == "success" ]; then
-          echo "🟢 **SUCCESS** - Monitor completed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "## 🟢 SUCCESS" >> $GITHUB_STEP_SUMMARY
+          echo "Monitor completed successfully" >> $GITHUB_STEP_SUMMARY
         else
-          echo "🔴 **FAILED** - Monitor encountered errors" >> $GITHUB_STEP_SUMMARY
+          echo "## 🔴 FAILED" >> $GITHUB_STEP_SUMMARY
+          echo "Monitor encountered errors" >> $GITHUB_STEP_SUMMARY
         fi
+        
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "*Check logs for detailed results*" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Check logs for detailed results" >> $GITHUB_STEP_SUMMARY
+        echo "2. Verify deposits in Supabase tables" >> $GITHUB_STEP_SUMMARY
+        echo "3. Check user balances in profiles table" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
         echo "*Report generated automatically by GitHub Actions*" >> $GITHUB_STEP_SUMMARY
