@@ -3,7 +3,7 @@ name: USDT Deposit Monitor
 on:
   schedule:
     # Запускать каждые 10 минут
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   # Для ручного запуска из GitHub UI
   workflow_dispatch:
     inputs:
