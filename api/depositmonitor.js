@@ -1,4 +1,3 @@
-// /api/deposits-monitor.js
 const { createClient } = require('@supabase/supabase-js');
 const { ethers } = require('ethers');
 
@@ -37,7 +36,7 @@ module.exports = async (req, res) => {
     // Получаем все адреса пользователей
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('deposit_address, id, email');
+      .select('deposit_address, id, email, balance');
 
     if (profilesError) throw profilesError;
 
@@ -55,6 +54,7 @@ module.exports = async (req, res) => {
       try {
         const usdtBalance = await usdtContract.balanceOf(profile.deposit_address);
         const usdtBalanceFormatted = ethers.formatUnits(usdtBalance, decimals);
+        const usdtBalanceNumber = parseFloat(usdtBalanceFormatted);
         
         console.log(`Address ${profile.deposit_address}: ${usdtBalanceFormatted} USDT`);
         
@@ -67,15 +67,19 @@ module.exports = async (req, res) => {
             .eq('token_address', USDT_ADDRESS.toLowerCase());
 
           if (!existingDeposits || existingDeposits.length === 0) {
+            // Вычисляем новый баланс (обрабатываем null значение)
+            const currentBalance = profile.balance ? parseFloat(profile.balance) : 0;
+            const newBalance = currentBalance + usdtBalanceNumber;
+            
             // Создаем запись о депозите
             const { error: insertError } = await supabase
               .from('deposits')
               .insert([
                 {
                   user_id: profile.id,
-                  tx_hash: `manual_${Date.now()}_${profile.id}`, // временный хэш
+                  tx_hash: `manual_${Date.now()}_${profile.id}`,
                   amount: usdtBalance.toString(),
-                  amount_usd: parseFloat(usdtBalanceFormatted),
+                  amount_usd: usdtBalanceNumber,
                   status: 'confirmed',
                   network: 'bsc',
                   token_address: USDT_ADDRESS.toLowerCase(),
@@ -86,15 +90,39 @@ module.exports = async (req, res) => {
               ]);
 
             if (!insertError) {
-              newDepositsCount++;
-              results.push({
-                user: profile.email,
-                address: profile.deposit_address,
-                amount: usdtBalanceFormatted,
-                token: 'USDT'
-              });
-              console.log(`✅ New USDT deposit: ${usdtBalanceFormatted} USDT for ${profile.email}`);
+              // Обновляем баланс пользователя в profiles
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ 
+                  balance: newBalance.toString()
+                })
+                .eq('id', profile.id);
+
+              if (updateError) {
+                console.error(`❌ Error updating balance for user ${profile.email}:`, updateError);
+                // Отменяем депозит если не удалось обновить баланс
+                await supabase
+                  .from('deposits')
+                  .delete()
+                  .eq('user_id', profile.id)
+                  .like('tx_hash', `manual_%_${profile.id}`);
+              } else {
+                newDepositsCount++;
+                results.push({
+                  user: profile.email,
+                  address: profile.deposit_address,
+                  amount: usdtBalanceFormatted,
+                  token: 'USDT',
+                  old_balance: currentBalance,
+                  new_balance: newBalance
+                });
+                console.log(`✅ New USDT deposit: ${usdtBalanceFormatted} USDT for ${profile.email}. Balance updated: ${currentBalance} → ${newBalance}`);
+              }
+            } else {
+              console.error(`❌ Error inserting deposit for ${profile.email}:`, insertError);
             }
+          } else {
+            console.log(`ℹ️  Deposit already exists for ${profile.email}`);
           }
         }
         
