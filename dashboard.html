@@ -6,203 +6,159 @@
 <title>Wallet</title>
 
 <style>
+:root {
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --bg-soft: #334155;
+  --border: #334155;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --accent: #818cf8;
+  --accent-soft: rgba(129,140,248,.15);
+  --green: #10b981;
+  --red: #ef4444;
+}
+
+/* RESET */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+  font-family: 'Segoe UI', system-ui, sans-serif;
 }
-
 body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    min-height: 100vh;
-    color: #f1f5f9;
+  margin: 0;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: var(--text-main);
 }
 
-/* ===== NAVBAR ===== */
+/* NAVBAR */
 .navbar {
-    height: 72px;
-    background: #0f172a;
-    border-bottom: 1px solid #334155;
-    display: flex;
-    align-items: center;
-    padding: 0 32px;
+  display: flex;
+  align-items: center;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+}
+.nav-left {
+  display: flex;
+  gap: 28px;
+}
+.nav-item {
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+.nav-item.active {
+  color: var(--accent);
+}
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.profile {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-main);
 }
 
-.navbar .logo {
-    font-size: 20px;
-    font-weight: 700;
-    color: #818cf8;
-}
-
-.navbar .nav-links {
-    display: flex;
-    gap: 28px;
-    margin-left: 40px;
-}
-
-.navbar a {
-    text-decoration: none;
-    color: #94a3b8;
-    font-weight: 500;
-    transition: 0.3s;
-}
-
-.navbar a.active,
-.navbar a:hover {
-    color: #a5b4fc;
-}
-
-/* ===== PAGE ===== */
+/* PAGE */
 .page {
-    width: 100%;
-    padding: 32px;
+  padding: 32px;
 }
 
-/* ===== BALANCE CARD ===== */
-.balance-card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 20px;
-    padding: 32px;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
-    margin-bottom: 28px;
+/* HEADER */
+.wallet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.balance {
+  font-size: 26px;
+  font-weight: 700;
+}
+.search {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--text-main);
+  width: 260px;
+}
+.search::placeholder {
+  color: var(--text-muted);
 }
 
-.balance-title {
-    color: #94a3b8;
-    font-size: 16px;
+/* TABLE */
+.table {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  overflow: hidden;
 }
-
-.balance-amount {
-    font-size: 42px;
-    font-weight: 700;
-    margin-top: 8px;
-    color: #f1f5f9;
+.table-header,
+.row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr 1.2fr;
+  align-items: center;
 }
-
-.balance-actions {
-    margin-top: 24px;
-    display: flex;
-    gap: 16px;
+.table-header {
+  padding: 16px 20px;
+  background: #0f172a;
+  color: var(--text-muted);
+  font-weight: 600;
 }
-
+.row {
+  padding: 18px 20px;
+  border-top: 1px solid var(--border);
+}
+.asset {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+}
+.coin {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+}
+.amount {
+  font-variant-numeric: tabular-nums;
+}
+.actions {
+  display: flex;
+  gap: 10px;
+}
 .btn {
-    border: none;
-    padding: 14px 22px;
-    font-size: 16px;
-    font-weight: 600;
-    border-radius: 12px;
-    cursor: pointer;
-    transition: 0.3s;
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+.deposit {
+  background: rgba(16,185,129,.15);
+  color: var(--green);
+}
+.withdraw {
+  background: rgba(239,68,68,.15);
+  color: var(--red);
 }
 
-.btn-deposit {
-    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-    color: white;
-}
-
-.btn-deposit:hover {
-    box-shadow: 0 15px 30px rgba(129,140,248,0.35);
-    transform: translateY(-1px);
-}
-
-.btn-withdraw {
-    background: #334155;
-    color: #f1f5f9;
-}
-
-.btn-withdraw:hover {
-    background: #3c4a5f;
-}
-
-/* ===== ASSETS ===== */
-.assets-card {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 20px;
-    overflow: hidden;
-}
-
-.assets-header {
-    padding: 22px 24px;
-    border-bottom: 1px solid #334155;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.assets-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.assets-table th,
-.assets-table td {
-    padding: 18px 24px;
-    text-align: left;
-}
-
-.assets-table thead {
-    background: #0f172a;
-}
-
-.assets-table th {
-    color: #94a3b8;
-    font-weight: 500;
-    font-size: 14px;
-}
-
-.assets-table tbody tr {
-    border-top: 1px solid #334155;
-}
-
-.assets-table tbody tr:hover {
-    background: rgba(129,140,248,0.05);
-}
-
-.asset-name {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-}
-
-.asset-badge {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(129,140,248,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    color: #818cf8;
-}
-
-.stat {
-    font-weight: 600;
-}
-
-.stat.available {
-    color: #10b981;
-}
-
-.stat.frozen {
-    color: #ef4444;
-}
-
-.stat.total {
-    color: #f1f5f9;
-}
-
-/* ===== RESPONSIVE ===== */
-@media (max-width: 768px) {
-    .page {
-        padding: 20px;
-    }
-    .balance-amount {
-        font-size: 34px;
-    }
+/* HOVER */
+.row:hover {
+  background: rgba(129,140,248,.05);
 }
 </style>
 </head>
@@ -211,59 +167,86 @@ body {
 
 <!-- NAVBAR -->
 <div class="navbar">
-    <div class="logo">Exchange</div>
-    <div class="nav-links">
-        <a href="#">Spot</a>
-        <a href="#">Futures</a>
-        <a href="#" class="active">Wallet</a>
-    </div>
+  <div class="nav-left">
+    <div class="nav-item">Spot</div>
+    <div class="nav-item">Futures</div>
+    <div class="nav-item">Earn</div>
+    <div class="nav-item">Petra</div>
+  </div>
+  <div class="nav-right">
+    <div class="nav-item active">Wallet</div>
+    <div class="profile">👤</div>
+  </div>
 </div>
 
 <!-- PAGE -->
 <div class="page">
 
-    <!-- BALANCE -->
-    <div class="balance-card">
-        <div class="balance-title">Total Balance</div>
-        <div class="balance-amount">$1,488.00</div>
+  <div class="wallet-header">
+    <div class="balance">Balance: $1488</div>
+    <input class="search" placeholder="Search asset..." oninput="filterAssets(this.value)">
+  </div>
 
-        <div class="balance-actions">
-            <button class="btn btn-deposit">Deposit</button>
-            <button class="btn btn-withdraw">Withdraw</button>
-        </div>
+  <div class="table">
+    <div class="table-header">
+      <div>Asset</div>
+      <div>Available</div>
+      <div>Frozen</div>
+      <div>Total</div>
+      <div>Actions</div>
     </div>
 
-    <!-- ASSETS -->
-    <div class="assets-card">
-        <div class="assets-header">Assets</div>
-
-        <table class="assets-table">
-            <thead>
-                <tr>
-                    <th>Asset</th>
-                    <th>Available</th>
-                    <th>Frozen</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="asset-name">
-                        <div class="asset-badge">₮</div>
-                        USDT (Tether)
-                    </td>
-                    <td class="stat available">2912.25</td>
-                    <td class="stat frozen">0.00</td>
-                    <td class="stat total">2912.25</td>
-                </tr>
-            </tbody>
-        </table>
+    <div class="row asset-row">
+      <div class="asset">
+        <div class="coin">₮</div> USDT
+      </div>
+      <div class="amount">2912.25</div>
+      <div class="amount">0.00</div>
+      <div class="amount">2912.25</div>
+      <div class="actions">
+        <button class="btn deposit">Deposit</button>
+        <button class="btn withdraw">Withdraw</button>
+      </div>
     </div>
 
+    <div class="row asset-row">
+      <div class="asset">
+        <div class="coin">₿</div> BTC
+      </div>
+      <div class="amount">0.124</div>
+      <div class="amount">0.01</div>
+      <div class="amount">0.134</div>
+      <div class="actions">
+        <button class="btn deposit">Deposit</button>
+        <button class="btn withdraw">Withdraw</button>
+      </div>
+    </div>
+
+    <div class="row asset-row">
+      <div class="asset">
+        <div class="coin">Ξ</div> ETH
+      </div>
+      <div class="amount">3.42</div>
+      <div class="amount">0.00</div>
+      <div class="amount">3.42</div>
+      <div class="actions">
+        <button class="btn deposit">Deposit</button>
+        <button class="btn withdraw">Withdraw</button>
+      </div>
+    </div>
+
+  </div>
 </div>
 
 <script>
-// здесь потом можно подключить API и динамику
+function filterAssets(value) {
+  value = value.toLowerCase();
+  document.querySelectorAll('.asset-row').forEach(row => {
+    row.style.display = row.innerText.toLowerCase().includes(value)
+      ? 'grid'
+      : 'none';
+  });
+}
 </script>
 
 </body>
