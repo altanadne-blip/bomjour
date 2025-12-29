@@ -1,844 +1,270 @@
-<!doctype html>
-<html lang="ru">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Wallet • Exchange UI</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wallet</title>
 
-  <style>
-    :root{
-      --indigo-500:#818cf8;
-      --indigo-300:#a5b4fc;
-      --indigo-050:rgba(129,140,248,.05);
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
 
-      --slate-700:#334155;
-      --slate-600:#3c4a5f;
-      --slate-400:#94a3b8;
-      --slate-100:#f1f5f9;
+body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    min-height: 100vh;
+    color: #f1f5f9;
+}
 
-      --ring:0 0 0 4px rgba(129,140,248,.15);
-      --glow:rgba(129,140,248,.35);
+/* ===== NAVBAR ===== */
+.navbar {
+    height: 72px;
+    background: #0f172a;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+}
 
-      --green:#10b981;
-      --red:#ef4444;
+.navbar .logo {
+    font-size: 20px;
+    font-weight: 700;
+    color: #818cf8;
+}
 
-      --bg:#ffffff;
-      --panel:#ffffff;
-      --line:rgba(148,163,184,.35);
-      --text:#0f172a;
+.navbar .nav-links {
+    display: flex;
+    gap: 28px;
+    margin-left: 40px;
+}
 
-      --radius:18px;
-      --radius-sm:14px;
+.navbar a {
+    text-decoration: none;
+    color: #94a3b8;
+    font-weight: 500;
+    transition: 0.3s;
+}
 
-      --shadow-soft: 0 10px 26px rgba(15,23,42,.06);
-      --shadow-tiny: 0 6px 14px rgba(15,23,42,.06);
+.navbar a.active,
+.navbar a:hover {
+    color: #a5b4fc;
+}
 
-      --grad: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-    }
+/* ===== PAGE ===== */
+.page {
+    width: 100%;
+    padding: 32px;
+}
 
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
-      color:var(--text);
-      background:
-        radial-gradient(900px 520px at 15% 0%, var(--indigo-050), transparent 60%),
-        radial-gradient(800px 520px at 95% 12%, rgba(129,140,248,.10), transparent 58%),
-        var(--bg);
-    }
+/* ===== BALANCE CARD ===== */
+.balance-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.35);
+    margin-bottom: 28px;
+}
 
-    /* Topbar */
-    .topbar{
-      position:sticky; top:0; z-index:20;
-      background: var(--grad);
-      box-shadow: 0 10px 28px rgba(15,23,42,.14);
-    }
-    .topbar__inner{
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 14px 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:16px;
-    }
-    .nav{display:flex; gap:18px; align-items:center; flex-wrap:wrap}
-    .nav__item{
-      color:white;
-      text-decoration:none;
-      font-weight:700;
-      opacity:.95;
-      padding:10px 12px;
-      border-radius: 999px;
-      transition: transform .15s ease, opacity .15s ease, background .15s ease;
-    }
-    .nav__item:hover{
-      opacity:1;
-      background: rgba(255,255,255,.14);
-      transform: translateY(-1px);
-    }
-    .topbar__right{display:flex; gap:12px; align-items:center}
-    .wallet-pill{
-      color:white;
-      text-decoration:none;
-      font-weight:900;
-      padding:10px 14px;
-      border-radius:999px;
-      background: rgba(255,255,255,.16);
-      border: 1px solid rgba(255,255,255,.18);
-      transition: transform .15s ease, background .15s ease;
-    }
-    .wallet-pill:hover{ transform: translateY(-1px); }
-    .avatar{
-      width:42px;height:42px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.26);
-      background: rgba(255,255,255,.14);
-      cursor:pointer;
-      transition: transform .15s ease;
-    }
-    .avatar:hover{ transform: translateY(-1px); }
+.balance-title {
+    color: #94a3b8;
+    font-size: 16px;
+}
 
-    /* Page */
-    .page{
-      max-width:1200px;
-      margin: 0 auto;
-      padding: 18px 18px 60px;
-    }
+.balance-amount {
+    font-size: 42px;
+    font-weight: 700;
+    margin-top: 8px;
+    color: #f1f5f9;
+}
 
-    /* Big bars like screenshot */
-    .bar{
-      background: rgba(241,245,249,.85);
-      border: 1px solid rgba(148,163,184,.40);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-soft);
-      padding: 18px 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap: 14px;
-    }
-    .bar + .bar{ margin-top: 12px; }
+.balance-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 16px;
+}
 
-    .bar__title{
-      font-weight:1000;
-      color: var(--slate-700);
-      letter-spacing:-.02em;
-      font-size: 34px;
-      line-height: 1.1;
-      margin: 0;
-    }
-    .bar__title small{
-      font-size: 22px;
-      font-weight:900;
-      color: var(--slate-600);
-      letter-spacing:0;
-    }
+.btn {
+    border: none;
+    padding: 14px 22px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: 0.3s;
+}
 
-    .bar__right{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
+.btn-deposit {
+    background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    color: white;
+}
 
-    /* Buttons - friendly */
-    .btn{
-      border:1px solid rgba(148,163,184,.45);
-      background: white;
-      color: var(--slate-700);
-      padding: 10px 14px;
-      border-radius: 14px;
-      font-weight:900;
-      cursor:pointer;
-      transition: transform .14s ease, box-shadow .14s ease, background .14s ease, border-color .14s ease;
-      box-shadow: var(--shadow-tiny);
-    }
-    .btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
-    .btn:active{ transform: translateY(0px) scale(.99); }
-    .btn:focus-visible{ outline:none; box-shadow: var(--ring); }
+.btn-deposit:hover {
+    box-shadow: 0 15px 30px rgba(129,140,248,0.35);
+    transform: translateY(-1px);
+}
 
-    .btn--primary{
-      border-color: rgba(129,140,248,.35);
-      background: var(--grad);
-      color:white;
-    }
-    .btn--ghost{
-      background: rgba(129,140,248,.08);
-      border-color: rgba(129,140,248,.22);
-    }
-    .btn--danger{
-      background: rgba(239,68,68,.10);
-      border-color: rgba(239,68,68,.18);
-      color: #7f1d1d;
-    }
+.btn-withdraw {
+    background: #334155;
+    color: #f1f5f9;
+}
 
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      background: rgba(129,140,248,.10);
-      border: 1px solid rgba(129,140,248,.18);
-      color: var(--slate-700);
-      padding: 10px 12px;
-      border-radius: 999px;
-      font-weight:900;
-    }
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background: rgba(129,140,248,.70);
-      box-shadow: 0 0 0 3px rgba(129,140,248,.18);
-    }
+.btn-withdraw:hover {
+    background: #3c4a5f;
+}
 
-    /* Assets panel like screenshot */
-    .panel{
-      margin-top: 12px;
-      background: rgba(241,245,249,.75);
-      border: 1px solid rgba(148,163,184,.40);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-soft);
-      overflow:hidden;
-    }
-    .panel__head{
-      padding: 16px 18px;
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      gap: 14px;
-      border-bottom: 1px solid rgba(148,163,184,.35);
-    }
-    .panel__head h2{
-      margin:0;
-      font-size: 34px;
-      letter-spacing:-.02em;
-      color: var(--slate-700);
-      font-weight:1000;
-      line-height: 1.1;
-    }
+/* ===== ASSETS ===== */
+.assets-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 20px;
+    overflow: hidden;
+}
 
-    .tools{
-      display:flex;
-      gap:10px;
-      align-items:flex-end;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-    }
-    .field{
-      display:flex;
-      flex-direction:column;
-      gap:6px;
-    }
-    .field__label{
-      font-size:12px;
-      font-weight:900;
-      color: var(--slate-600);
-    }
-    .input{
-      height: 40px;
-      padding: 0 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(148,163,184,.45);
-      background: white;
-      color: var(--slate-700);
-      outline: none;
-      transition: box-shadow .14s ease, border-color .14s ease;
-      min-width: 260px;
-    }
-    .input:focus{ box-shadow: var(--ring); border-color: rgba(129,140,248,.55); }
+.assets-header {
+    padding: 22px 24px;
+    border-bottom: 1px solid #334155;
+    font-size: 18px;
+    font-weight: 600;
+}
 
-    /* Table */
-    .table-wrap{
-      overflow:auto;
-      background: rgba(241,245,249,.45);
-    }
-    table{
-      width:100%;
-      border-collapse:separate;
-      border-spacing:0;
-      min-width: 920px;
-    }
-    thead th{
-      text-align:center;
-      padding: 14px 16px;
-      font-size: 18px;
-      font-weight:1000;
-      color: var(--slate-700);
-      background: rgba(241,245,249,.55);
-      border-bottom: 1px solid rgba(148,163,184,.35);
-    }
-    thead th:first-child{ text-align:left; }
-    tbody td{
-      padding: 14px 16px;
-      border-bottom: 1px solid rgba(148,163,184,.35);
-      background: rgba(241,245,249,.18);
-      color: var(--slate-700);
-      font-weight:900;
-    }
-    tbody tr:hover td{ background: rgba(129,140,248,.06); }
+.assets-table {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-    .col-asset{ width: 46%; }
-    .col-num{ width: 14%; }
-    .col-actions{ width: 26%; }
+.assets-table th,
+.assets-table td {
+    padding: 18px 24px;
+    text-align: left;
+}
 
-    .asset{
-      display:flex;
-      align-items:center;
-      gap:12px;
-    }
-    .coin{
-      width:34px;height:34px;
-      border-radius: 999px;
-      display:grid;
-      place-items:center;
-      font-weight:1000;
-      color: white;
-      background: rgba(129,140,248,.92);
-      box-shadow: 0 10px 22px rgba(129,140,248,.25);
-      flex: 0 0 auto;
-    }
-    .asset__meta{
-      display:flex;
-      flex-direction:column;
-      gap:2px;
-    }
-    .asset__name{
-      font-weight:1000;
-      font-size: 18px;
-    }
-    .asset__sub{
-      font-weight:900;
-      color: var(--slate-600);
-      font-size: 13px;
-    }
+.assets-table thead {
+    background: #0f172a;
+}
 
-    .num{
-      text-align:center;
-      font-size: 18px;
-      color: var(--slate-700);
-    }
-    .num.muted{
-      color: var(--slate-600);
-      font-weight:900;
-    }
+.assets-table th {
+    color: #94a3b8;
+    font-weight: 500;
+    font-size: 14px;
+}
 
-    .actions{
-      display:flex;
-      justify-content:flex-end;
-      gap:10px;
-      flex-wrap:wrap;
-    }
-    .action{
-      padding: 10px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(148,163,184,.45);
-      background: white;
-      cursor:pointer;
-      font-weight:1000;
-      transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
-      box-shadow: var(--shadow-tiny);
-    }
-    .action:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
-    .action:active{ transform: translateY(0px) scale(.99); }
-    .action:focus-visible{ outline:none; box-shadow: var(--ring); }
+.assets-table tbody tr {
+    border-top: 1px solid #334155;
+}
 
-    .action--deposit{
-      border-color: rgba(16,185,129,.22);
-      background: rgba(16,185,129,.10);
-    }
-    .action--withdraw{
-      border-color: rgba(239,68,68,.20);
-      background: rgba(239,68,68,.10);
-    }
+.assets-table tbody tr:hover {
+    background: rgba(129,140,248,0.05);
+}
 
-    /* Modal */
-    .modal{
-      position:fixed;
-      inset:0;
-      display:none;
-      place-items:center;
-      padding: 18px;
-      z-index: 50;
-    }
-    .modal.is-open{ display:grid; }
-    .modal__backdrop{
-      position:absolute;
-      inset:0;
-      background: rgba(15,23,42,.55);
-    }
-    .modal__panel{
-      position:relative;
-      width:min(560px, 100%);
-      background:white;
-      border-radius: 18px;
-      border: 1px solid rgba(148,163,184,.45);
-      box-shadow: 0 26px 70px rgba(15,23,42,.28);
-      overflow:hidden;
-      transform: translateY(8px);
-      animation: pop .16s ease forwards;
-    }
-    @keyframes pop{ to{ transform: translateY(0); } }
-    .modal__top{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
-      align-items:flex-start;
-      padding: 16px;
-      background: rgba(129,140,248,.08);
-      border-bottom:1px solid rgba(148,163,184,.35);
-    }
-    .modal__title{
-      font-weight:1000;
-      font-size: 16px;
-      color: var(--slate-700);
-    }
-    .modal__subtitle{
-      margin-top:4px;
-      font-weight:900;
-      color: var(--slate-600);
-      font-size: 12.5px;
-    }
-    .icon-btn{
-      border:0;
-      background:white;
-      width:40px;height:40px;
-      border-radius: 14px;
-      cursor:pointer;
-      font-weight:1000;
-      box-shadow: var(--shadow-tiny);
-      transition: transform .14s ease, box-shadow .14s ease;
-    }
-    .icon-btn:hover{ transform: translateY(-1px); box-shadow: 0 16px 30px rgba(15,23,42,.12); }
+.asset-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+}
 
-    .modal__body{ padding: 16px; }
-    .notice{
-      border: 1px dashed rgba(129,140,248,.40);
-      background: rgba(129,140,248,.08);
-      color: var(--slate-700);
-      font-weight:900;
-      padding: 12px;
-      border-radius: 14px;
-      margin-bottom: 12px;
-    }
-    .form{ display:flex; flex-direction:column; gap:12px; }
-    .select{
-      height: 40px;
-      padding: 0 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(148,163,184,.45);
-      background: white;
-      color: var(--slate-700);
-      outline: none;
-      transition: box-shadow .14s ease, border-color .14s ease;
-      width: 100%;
-    }
-    .select:focus{ box-shadow: var(--ring); border-color: rgba(129,140,248,.55); }
+.asset-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(129,140,248,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #818cf8;
+}
 
-    .helpbox{
-      border: 1px solid rgba(148,163,184,.35);
-      background: rgba(241,245,249,.65);
-      border-radius: 14px;
-      padding: 12px;
-      display:flex;
-      flex-direction:column;
-      gap:10px;
-      margin-top: 4px;
-    }
-    .helpbox__row{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-    }
-    .label{
-      color: var(--slate-600);
-      font-weight:900;
-      font-size: 12.5px;
-    }
-    .value{
-      color: var(--slate-700);
-      font-weight:1000;
-      font-size: 14px;
-      word-break: break-all;
-    }
-    .copy{
-      border:1px solid rgba(129,140,248,.22);
-      background: rgba(129,140,248,.10);
-      color: var(--slate-700);
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-weight:1000;
-      cursor:pointer;
-      transition: transform .14s ease, box-shadow .14s ease;
-      box-shadow: var(--shadow-tiny);
-      width: fit-content;
-    }
-    .copy:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
+.stat {
+    font-weight: 600;
+}
 
-    .form__row{
-      display:flex;
-      gap:10px;
-      justify-content:flex-end;
-      margin-top: 6px;
-      flex-wrap:wrap;
-    }
+.stat.available {
+    color: #10b981;
+}
 
-    @media (max-width: 980px){
-      .bar{ align-items:flex-start; flex-direction:column; }
-      .bar__right{ width:100%; justify-content:flex-start; }
-      .input{ min-width: 220px; width: min(520px, 100%); }
-      .panel__head{ align-items:flex-start; flex-direction:column; }
-      .tools{ width:100%; justify-content:flex-start; }
-      .bar__title{ font-size: 28px; }
-      .panel__head h2{ font-size: 28px; }
+.stat.frozen {
+    color: #ef4444;
+}
+
+.stat.total {
+    color: #f1f5f9;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .page {
+        padding: 20px;
     }
-  </style>
+    .balance-amount {
+        font-size: 34px;
+    }
+}
+</style>
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="topbar__inner">
-      <nav class="nav">
-        <a class="nav__item" href="#">Spot</a>
-        <a class="nav__item" href="#">Futures</a>
-        <a class="nav__item" href="#">Earn</a>
-        <a class="nav__item" href="#">Petra66</a>
-        <a class="nav__item" href="#">FAQ</a>
-      </nav>
 
-      <div class="topbar__right">
-        <a class="wallet-pill" href="#" aria-current="page">Wallet</a>
-        <button class="avatar" type="button" aria-label="Профиль"></button>
-      </div>
+<!-- NAVBAR -->
+<div class="navbar">
+    <div class="logo">Exchange</div>
+    <div class="nav-links">
+        <a href="#">Spot</a>
+        <a href="#">Futures</a>
+        <a href="#" class="active">Wallet</a>
     </div>
-  </header>
+</div>
 
-  <main class="page">
+<!-- PAGE -->
+<div class="page">
 
-    <!-- Balance bar (как на скрине: большой и простой) -->
-    <section class="bar" aria-label="Balance">
-      <h1 class="bar__title">
-        Balance: <span id="balanceText">$1488</span>
-        <small id="balanceSmall"></small>
-      </h1>
+    <!-- BALANCE -->
+    <div class="balance-card">
+        <div class="balance-title">Total Balance</div>
+        <div class="balance-amount">$1,488.00</div>
 
-      <div class="bar__right">
-        <span class="chip" title="Демо режим">
-          <span class="dot" aria-hidden="true"></span>
-          Wallet
-        </span>
-        <button class="btn btn--primary" type="button" data-open="deposit">Deposit</button>
-        <button class="btn btn--danger" type="button" data-open="withdraw">Withdraw</button>
-      </div>
-    </section>
-
-    <!-- Assets panel (как на скрине) -->
-    <section class="panel" aria-label="Assets">
-      <div class="panel__head">
-        <h2>Assets:</h2>
-
-        <div class="tools">
-          <label class="field">
-            <span class="field__label">Поиск</span>
-            <input class="input" id="searchInput" type="search" placeholder="Например: USDT, BTC, ETH…" />
-          </label>
-
-          <button class="btn btn--ghost" type="button" id="refreshBtn">Refresh</button>
+        <div class="balance-actions">
+            <button class="btn btn-deposit">Deposit</button>
+            <button class="btn btn-withdraw">Withdraw</button>
         </div>
-      </div>
+    </div>
 
-      <div class="table-wrap" role="region" aria-label="Assets table" tabindex="0">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-asset" style="text-align:left;"> </th>
-              <th class="col-num">Frozen</th>
-              <th class="col-num">Available</th>
-              <th class="col-num">Total</th>
-              <th class="col-actions" style="text-align:right;"> </th>
-            </tr>
-          </thead>
-          <tbody id="assetsTbody"></tbody>
+    <!-- ASSETS -->
+    <div class="assets-card">
+        <div class="assets-header">Assets</div>
+
+        <table class="assets-table">
+            <thead>
+                <tr>
+                    <th>Asset</th>
+                    <th>Available</th>
+                    <th>Frozen</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="asset-name">
+                        <div class="asset-badge">₮</div>
+                        USDT (Tether)
+                    </td>
+                    <td class="stat available">2912.25</td>
+                    <td class="stat frozen">0.00</td>
+                    <td class="stat total">2912.25</td>
+                </tr>
+            </tbody>
         </table>
-      </div>
-    </section>
-  </main>
-
-  <!-- Modal -->
-  <div class="modal" id="modal" aria-hidden="true">
-    <div class="modal__backdrop" data-close></div>
-    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <div class="modal__top">
-        <div>
-          <div class="modal__title" id="modalTitle">Action</div>
-          <div class="modal__subtitle" id="modalSubtitle">—</div>
-        </div>
-        <button class="icon-btn" type="button" data-close aria-label="Закрыть">✕</button>
-      </div>
-
-      <div class="modal__body">
-        <div class="notice" id="modalNotice">
-          Демо-окно. Подключи реальный бек — и будет рабочий Wallet.
-        </div>
-
-        <div class="form">
-          <label class="field">
-            <span class="field__label">Asset</span>
-            <select class="select" id="modalAsset"></select>
-          </label>
-
-          <!-- Deposit: show address -->
-          <div id="depositBox" style="display:none;">
-            <div class="helpbox">
-              <div class="helpbox__row">
-                <div class="label">Deposit address</div>
-                <div class="value" id="depositAddress">—</div>
-              </div>
-              <button class="copy" type="button" id="copyAddressBtn">Copy address</button>
-            </div>
-          </div>
-
-          <!-- Withdraw: address + amount -->
-          <div id="withdrawBox" style="display:none;">
-            <label class="field">
-              <span class="field__label">Withdraw address</span>
-              <input class="select" id="withdrawAddress" placeholder="Введите адрес…" />
-            </label>
-            <label class="field">
-              <span class="field__label">Amount</span>
-              <input class="select" id="withdrawAmount" inputmode="decimal" placeholder="0.00" />
-            </label>
-          </div>
-
-          <div class="form__row">
-            <button class="btn btn--primary" type="button" id="modalConfirm">Confirm</button>
-            <button class="btn btn--ghost" type="button" data-close>Cancel</button>
-          </div>
-        </div>
-      </div>
     </div>
-  </div>
 
-  <script>
-    // -------------------------
-    // Friendly Wallet Demo Logic
-    // -------------------------
-    const ASSETS = [
-      { symbol: "USDT", name: "Tether",   frozen: 0.00, available: 2912.25 },
-      { symbol: "BTC",  name: "Bitcoin",  frozen: 0.00, available: 0.012345 },
-      { symbol: "ETH",  name: "Ethereum", frozen: 0.15, available: 0.40 },
-      { symbol: "SOL",  name: "Solana",   frozen: 0.00, available: 8.50 },
-      { symbol: "XRP",  name: "XRP",      frozen: 0.00, available: 120.00 },
-      { symbol: "DOGE", name: "Dogecoin", frozen: 0.00, available: 50.00 },
-    ];
+</div>
 
-    const $ = (sel) => document.querySelector(sel);
+<script>
+// здесь потом можно подключить API и динамику
+</script>
 
-    const tbody = $("#assetsTbody");
-    const searchInput = $("#searchInput");
-    const refreshBtn = $("#refreshBtn");
-
-    const balanceText = $("#balanceText");
-    const balanceSmall = $("#balanceSmall");
-
-    const modal = $("#modal");
-    const modalTitle = $("#modalTitle");
-    const modalSubtitle = $("#modalSubtitle");
-    const modalAsset = $("#modalAsset");
-    const modalConfirm = $("#modalConfirm");
-
-    const depositBox = $("#depositBox");
-    const depositAddressEl = $("#depositAddress");
-    const copyAddressBtn = $("#copyAddressBtn");
-
-    const withdrawBox = $("#withdrawBox");
-    const withdrawAddress = $("#withdrawAddress");
-    const withdrawAmount = $("#withdrawAmount");
-
-    function fmtNum(n){
-      const x = Number(n);
-      if (!Number.isFinite(x)) return "0.00";
-      if (Math.abs(x) < 1) return x.toLocaleString("en-US", { maximumFractionDigits: 8 });
-      return x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    }
-    function totalOf(a){ return (Number(a.frozen) || 0) + (Number(a.available) || 0); }
-
-    // Demo balance like screenshot style: simple integer dollars
-    function setHeaderBalance(){
-      const sumAvailable = ASSETS.reduce((s,a)=> s + (Number(a.available)||0), 0);
-      const demoBalance = Math.max(0, Math.round(sumAvailable * 0.51)); // just "screen-like"
-      balanceText.textContent = `$${demoBalance}`;
-      balanceSmall.textContent = ""; // если хочешь — сюда можно добавить "≈"
-    }
-
-    function filteredAssets(){
-      const q = (searchInput.value || "").trim().toLowerCase();
-      if (!q) return ASSETS.slice();
-      return ASSETS.filter(a => (`${a.symbol} ${a.name}`).toLowerCase().includes(q));
-    }
-
-    function renderOptions(){
-      modalAsset.innerHTML = "";
-      for (const a of ASSETS){
-        const opt = document.createElement("option");
-        opt.value = a.symbol;
-        opt.textContent = `${a.symbol} — ${a.name}`;
-        modalAsset.appendChild(opt);
-      }
-    }
-
-    function renderTable(){
-      const list = filteredAssets();
-      tbody.innerHTML = "";
-
-      for (const a of list){
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td class="col-asset">
-            <div class="asset">
-              <div class="coin" aria-hidden="true">${a.symbol.slice(0,1)}</div>
-              <div class="asset__meta">
-                <div class="asset__name">${a.symbol}</div>
-                <div class="asset__sub">${a.name}</div>
-              </div>
-            </div>
-          </td>
-
-          <td class="num muted">${fmtNum(a.frozen)}</td>
-          <td class="num">${fmtNum(a.available)}</td>
-          <td class="num">${fmtNum(totalOf(a))}</td>
-
-          <td class="col-actions">
-            <div class="actions">
-              <button class="action action--deposit" type="button" data-action="deposit" data-asset="${a.symbol}">Deposit</button>
-              <button class="action action--withdraw" type="button" data-action="withdraw" data-asset="${a.symbol}">Withdraw</button>
-            </div>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      }
-    }
-
-    // ----- Modal -----
-    let currentAction = "deposit";
-
-    function fakeDepositAddress(symbol){
-      // demo address generator (replace with backend)
-      const base = `${symbol}-${Math.random().toString(16).slice(2,10)}${Math.random().toString(16).slice(2,10)}`;
-      return "0x" + base.replace(/[^a-f0-9]/gi,"").padEnd(32,"a").slice(0,32);
-    }
-
-    function openModal(action, assetSymbol){
-      currentAction = action;
-
-      modalTitle.textContent = (action === "deposit") ? "Deposit" : "Withdraw";
-      modalSubtitle.textContent = assetSymbol ? `Asset: ${assetSymbol}` : "Выберите актив";
-
-      modalAsset.value = assetSymbol || ASSETS[0].symbol;
-
-      // reset
-      withdrawAddress.value = "";
-      withdrawAmount.value = "";
-
-      // show blocks
-      if (action === "deposit"){
-        depositBox.style.display = "";
-        withdrawBox.style.display = "none";
-        modalConfirm.textContent = "Generate address";
-        depositAddressEl.textContent = "—";
-      } else {
-        depositBox.style.display = "none";
-        withdrawBox.style.display = "";
-        modalConfirm.textContent = "Confirm withdraw";
-      }
-
-      modal.classList.add("is-open");
-      modal.setAttribute("aria-hidden", "false");
-    }
-
-    function closeModal(){
-      modal.classList.remove("is-open");
-      modal.setAttribute("aria-hidden", "true");
-    }
-
-    function confirmModal(){
-      const asset = modalAsset.value;
-
-      if (currentAction === "deposit"){
-        const addr = fakeDepositAddress(asset);
-        depositAddressEl.textContent = addr;
-        return;
-      }
-
-      // withdraw validation
-      const addr = withdrawAddress.value.trim();
-      const amt = Number(withdrawAmount.value);
-
-      if (!addr){
-        alert("Введите адрес вывода.");
-        return;
-      }
-      if (!Number.isFinite(amt) || amt <= 0){
-        alert("Введите корректную сумму.");
-        return;
-      }
-
-      alert(`Withdraw (demo)\nAsset: ${asset}\nAddress: ${addr}\nAmount: ${amt}`);
-      closeModal();
-    }
-
-    async function copyAddress(){
-      const txt = depositAddressEl.textContent.trim();
-      if (!txt || txt === "—"){
-        alert("Сначала сгенерируй адрес.");
-        return;
-      }
-      try{
-        await navigator.clipboard.writeText(txt);
-        copyAddressBtn.textContent = "Copied!";
-        setTimeout(()=> (copyAddressBtn.textContent = "Copy address"), 900);
-      }catch{
-        alert("Не удалось скопировать (ограничения браузера).");
-      }
-    }
-
-    // Events
-    document.addEventListener("click", (e) => {
-      const t = e.target;
-
-      if (t?.matches?.("[data-open]")){
-        openModal(t.getAttribute("data-open"), null);
-        return;
-      }
-      if (t?.matches?.("[data-action]")){
-        openModal(t.getAttribute("data-action"), t.getAttribute("data-asset"));
-        return;
-      }
-      if (t?.hasAttribute?.("data-close")){
-        closeModal();
-        return;
-      }
-    });
-
-    modalConfirm.addEventListener("click", confirmModal);
-    copyAddressBtn.addEventListener("click", copyAddress);
-
-    searchInput.addEventListener("input", renderTable);
-    refreshBtn.addEventListener("click", () => {
-      refreshBtn.blur();
-      setHeaderBalance();
-      renderTable();
-    });
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
-    });
-
-    // Init
-    renderOptions();
-    setHeaderBalance();
-    renderTable();
-  </script>
 </body>
 </html>
