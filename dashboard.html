@@ -1,664 +1,795 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Investment Portal</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Wallet • Exchange UI</title>
 
-        body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-            color: #f1f5f9;
-        }
+  <style>
+    :root{
+      --indigo-500:#818cf8;
+      --indigo-300:#a5b4fc;
+      --indigo-050:rgba(129,140,248,.05);
 
-        /* Header */
-        .dashboard-header {
-            background: #1e293b;
-            border-bottom: 1px solid #334155;
-            padding: 16px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-        }
+      --slate-700:#334155;
+      --slate-600:#3c4a5f;
+      --slate-400:#94a3b8;
+      --slate-100:#f1f5f9;
 
-        .logo {
-            font-size: 24px;
-            font-weight: 700;
-            color: #818cf8;
-            letter-spacing: 0.5px;
-        }
+      --ring:0 0 0 4px rgba(129,140,248,.15);
+      --glow:rgba(129,140,248,.35);
 
-        .profile-section {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+      --green:#10b981;
+      --red:#ef4444;
 
-        .user-email {
-            color: #94a3b8;
-            font-size: 14px;
-        }
+      --bg:#ffffff;
+      --card:#ffffff;
+      --line:rgba(148,163,184,.35);
+      --text:#0f172a;
 
-        .logout-btn {
-            background: #334155;
-            color: #f1f5f9;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
+      --radius:16px;
+      --shadow-soft: 0 8px 18px rgba(15,23,42,.06);
+      --grad: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
+    }
 
-        .logout-btn:hover {
-            background: #475569;
-        }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% 0%, var(--indigo-050), transparent 60%),
+        radial-gradient(700px 400px at 90% 10%, rgba(129,140,248,.10), transparent 55%),
+        var(--bg);
+    }
 
-        .profile-icon {
-            width: 44px;
-            height: 44px;
-            background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            font-size: 18px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: 2px solid #334155;
-        }
+    /* Topbar */
+    .topbar{
+      position:sticky; top:0; z-index:20;
+      background: var(--grad);
+      box-shadow: 0 10px 26px rgba(15,23,42,.12);
+    }
+    .topbar__inner{
+      max-width: 1200px; margin: 0 auto;
+      padding: 14px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px;
+    }
+    .nav{display:flex; gap:18px; align-items:center}
+    .nav__item{
+      color:white; text-decoration:none; font-weight:600; opacity:.95;
+      padding:10px 10px; border-radius: 12px;
+      transition: transform .15s ease, opacity .15s ease, background .15s ease;
+    }
+    .nav__item:hover{opacity:1; background: rgba(255,255,255,.12); transform: translateY(-1px);}
+    .topbar__right{display:flex; gap:12px; align-items:center}
+    .wallet-pill{
+      color:white; text-decoration:none; font-weight:700;
+      padding:10px 14px; border-radius:999px;
+      background: rgba(255,255,255,.14);
+      border: 1px solid rgba(255,255,255,.18);
+      transition: transform .15s ease, background .15s ease;
+    }
+    .wallet-pill.is-active{ background: rgba(255,255,255,.20); }
+    .wallet-pill:hover{ transform: translateY(-1px); }
 
-        .profile-icon:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(129, 140, 248, 0.3);
-        }
+    .avatar{
+      width:42px;height:42px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.28);
+      background: rgba(255,255,255,.12);
+      cursor:pointer;
+      transition: transform .15s ease;
+    }
+    .avatar:hover{ transform: translateY(-1px); }
+    .avatar__dot{
+      display:block;
+      width:14px;height:14px; border-radius:999px;
+      margin:0 auto;
+      background: rgba(255,255,255,.75);
+    }
 
-        /* Loading State */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 200px;
-            font-size: 18px;
-            color: #94a3b8;
-        }
+    /* Page */
+    .page{max-width:1200px; margin: 0 auto; padding: 22px 18px 60px;}
 
-        .spinner {
-            border: 3px solid #334155;
-            border-top: 3px solid #818cf8;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin-right: 15px;
-        }
+    /* Hero */
+    .hero{
+      display:flex; justify-content:space-between; gap:18px; align-items:flex-end;
+      margin: 10px 0 18px;
+    }
+    .hero__title{margin:0; font-size: 28px; letter-spacing: -.02em; color: var(--slate-700);}
+    .hero__subtitle{margin:6px 0 0; color: var(--slate-600);}
+    .hero__right{display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;}
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+    /* Segmented */
+    .segmented{
+      display:flex;
+      background: rgba(129,140,248,.12);
+      border:1px solid rgba(129,140,248,.20);
+      border-radius:999px;
+      padding:4px;
+    }
+    .segmented__btn{
+      border:0; background:transparent; cursor:pointer;
+      padding:10px 12px; border-radius:999px;
+      font-weight:700; color: var(--slate-700);
+      transition: transform .15s ease, background .15s ease;
+    }
+    .segmented__btn:hover{ transform: translateY(-1px); }
+    .segmented__btn.is-active{ background: white; box-shadow: var(--shadow-soft); }
 
-        /* Error State */
-        .error-message {
-            text-align: center;
-            padding: 40px;
-            color: #ef4444;
-            font-size: 16px;
-        }
+    /* Buttons */
+    .btn{
+      border:1px solid rgba(148,163,184,.45);
+      background: white;
+      color: var(--slate-700);
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-weight:800;
+      cursor:pointer;
+      transition: transform .14s ease, box-shadow .14s ease, background .14s ease, border-color .14s ease;
+      box-shadow: 0 8px 18px rgba(15,23,42,.06);
+    }
+    .btn:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+    .btn:focus-visible{ outline:none; box-shadow: var(--ring); }
 
-        .retry-btn {
-            background: #818cf8;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 15px;
-            font-size: 14px;
-        }
+    .btn--primary{ border-color: rgba(129,140,248,.35); background: var(--grad); color:white; }
+    .btn--ghost{ background: rgba(129,140,248,.08); border-color: rgba(129,140,248,.22); }
+    .btn--danger{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.20); color: #7f1d1d; }
 
-        /* Main Container */
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px;
-            display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 30px;
-            min-height: calc(100vh - 80px);
-        }
+    .btn__dot{
+      display:inline-block; width:8px;height:8px; border-radius:999px;
+      margin-right:8px; vertical-align:middle;
+    }
+    .btn__dot--green{ background: var(--green); }
+    .btn__dot--red{ background: var(--red); }
 
-        /* Portfolio Section */
-        .portfolio-section {
-            background: #1e293b;
-            border-radius: 20px;
-            border: 1px solid #334155;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
+    /* Cards / Grid */
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .card{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow-soft);
+    }
+    .card--gradient{
+      background:
+        radial-gradient(500px 220px at 20% 10%, rgba(255,255,255,.25), transparent 55%),
+        radial-gradient(500px 220px at 80% 20%, rgba(255,255,255,.20), transparent 55%),
+        var(--grad);
+      color:white;
+      border-color: rgba(255,255,255,.18);
+    }
+    .card__row{display:flex; justify-content:space-between; gap:12px; align-items:flex-start;}
+    .card__label{font-size: 13px; color: var(--slate-600); font-weight:700;}
+    .card--gradient .card__label{ color: rgba(255,255,255,.85); }
+    .card__value{
+      margin-top: 8px;
+      font-size: 28px;
+      font-weight:900;
+      letter-spacing: -.02em;
+      color: var(--slate-700);
+    }
+    .card--gradient .card__value{ color:white; }
+    .card__hint{margin-top: 10px; font-size: 12.5px; color: var(--slate-600);}
+    .card--gradient .card__hint{ color: rgba(255,255,255,.85); }
 
-        .portfolio-header {
-            padding: 30px;
-            border-bottom: 1px solid #334155;
-            background: rgba(15, 23, 42, 0.5);
-        }
+    .pill{
+      background: rgba(255,255,255,.16);
+      border: 1px solid rgba(255,255,255,.20);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight:900;
+      letter-spacing:.02em;
+    }
 
-        .portfolio-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 8px;
-        }
+    /* Toolbar */
+    .toolbar{
+      display:flex; align-items:flex-end; justify-content:space-between;
+      gap:14px; margin-bottom: 14px;
+    }
+    .toolbar__left{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
+    .field{display:flex; flex-direction:column; gap:6px;}
+    .field__label{font-size:12px; font-weight:800; color: var(--slate-600);}
+    .input, .select{
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,.45);
+      background: white;
+      color: var(--slate-700);
+      outline: none;
+      transition: box-shadow .14s ease, border-color .14s ease;
+      min-width: 240px;
+    }
+    .select{ min-width: 190px; }
+    .input:focus, .select:focus{ box-shadow: var(--ring); border-color: rgba(129,140,248,.55); }
 
-        .portfolio-subtitle {
-            color: #94a3b8;
-            font-size: 14px;
-        }
+    .checkbox{
+      display:flex; gap:10px; align-items:center;
+      color: var(--slate-600); font-weight:700;
+      user-select:none;
+    }
+    .checkbox input{ width:16px;height:16px; accent-color: var(--indigo-500); }
 
-        .total-balance {
-            font-size: 32px;
-            font-weight: 700;
-            color: #818cf8;
-            margin-top: 16px;
-        }
+    /* Table */
+    .table-card{ padding: 0; overflow:hidden; }
+    .table-head{
+      padding: 14px 16px 8px;
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+    }
+    .table-head__title{margin:0; font-size: 16px; font-weight:900; color: var(--slate-700);}
+    .table-head__meta{color: var(--slate-600); font-weight:800; font-size: 12.5px;}
 
-        /* Assets List */
-        .assets-list {
-            padding: 0;
-        }
+    .table-wrap{
+      max-height: 520px;
+      overflow:auto;
+      border-top: 1px solid var(--line);
+    }
+    .table{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      min-width: 860px;
+    }
+    .table thead th{
+      position:sticky; top:0; z-index:5;
+      background: rgba(129,140,248,.08);
+      color: var(--slate-600);
+      text-align:left;
+      font-size: 12px;
+      letter-spacing:.02em;
+      font-weight:900;
+      padding: 12px 16px;
+      border-bottom:1px solid var(--line);
+    }
+    .table tbody td{
+      padding: 14px 16px;
+      border-bottom:1px solid var(--line);
+      color: var(--slate-700);
+      font-weight:800;
+      vertical-align:middle;
+    }
+    .table tbody tr:hover td{ background: rgba(129,140,248,.06); }
 
-        .asset-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 30px;
-            border-bottom: 1px solid #334155;
-            transition: all 0.3s ease;
-        }
+    .th-asset{ width: 44%; }
+    .th-actions{ width: 22%; }
 
-        .asset-item:hover {
-            background: rgba(51, 65, 85, 0.3);
-        }
+    .asset{ display:flex; align-items:center; gap:12px; }
+    .coin{
+      width:34px;height:34px;
+      border-radius: 999px;
+      display:grid; place-items:center;
+      font-weight:1000;
+      color: white;
+      background: rgba(129,140,248,.90);
+      box-shadow: 0 10px 22px rgba(129,140,248,.25);
+    }
+    .asset__meta{ display:flex; flex-direction:column; gap:2px; }
+    .asset__name{ font-weight:1000; }
+    .asset__sub{ font-weight:800; color: var(--slate-600); font-size: 12px; }
 
-        .asset-item:last-child {
-            border-bottom: none;
-        }
+    .actions{ display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap; }
+    .action{
+      padding: 9px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(148,163,184,.45);
+      background: white;
+      cursor:pointer;
+      font-weight:1000;
+      transition: transform .14s ease, box-shadow .14s ease, background .14s ease;
+    }
+    .action:hover{ transform: translateY(-1px); box-shadow: 0 14px 28px rgba(15,23,42,.10); }
+    .action:focus-visible{ outline:none; box-shadow: var(--ring); }
 
-        .asset-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
+    .action--deposit{ border-color: rgba(16,185,129,.25); background: rgba(16,185,129,.10); }
+    .action--withdraw{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.10); }
+    .action--transfer{ border-color: rgba(129,140,248,.25); background: rgba(129,140,248,.10); }
 
-        .asset-icon {
-            width: 40px;
-            height: 40px;
-            background: #334155;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: #818cf8;
-            font-size: 14px;
-        }
+    /* Modal */
+    .modal{
+      position:fixed; inset:0;
+      display:none; place-items:center;
+      padding: 18px;
+    }
+    .modal.is-open{ display:grid; }
+    .modal__backdrop{
+      position:absolute; inset:0;
+      background: rgba(15,23,42,.55);
+    }
+    .modal__panel{
+      position:relative;
+      width:min(560px, 100%);
+      background:white;
+      border-radius: 18px;
+      border: 1px solid rgba(148,163,184,.45);
+      box-shadow: 0 26px 70px rgba(15,23,42,.28);
+      overflow:hidden;
+      transform: translateY(8px);
+      animation: pop .16s ease forwards;
+    }
+    @keyframes pop{ to{ transform: translateY(0); } }
+    .modal__top{
+      display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
+      padding: 16px;
+      background: rgba(129,140,248,.08);
+      border-bottom:1px solid var(--line);
+    }
+    .modal__title{ font-weight:1000; font-size: 16px; color: var(--slate-700); }
+    .modal__subtitle{ margin-top:4px; font-weight:800; color: var(--slate-600); font-size: 12.5px; }
+    .icon-btn{
+      border:0; background:white;
+      width:40px;height:40px;
+      border-radius: 14px;
+      cursor:pointer;
+      font-weight:1000;
+      box-shadow: 0 10px 22px rgba(15,23,42,.08);
+      transition: transform .14s ease, box-shadow .14s ease;
+    }
+    .icon-btn:hover{ transform: translateY(-1px); box-shadow: 0 16px 30px rgba(15,23,42,.12); }
 
-        .asset-details h3 {
-            font-size: 16px;
-            font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 4px;
-        }
+    .modal__body{ padding: 16px; }
+    .notice{
+      border: 1px dashed rgba(129,140,248,.40);
+      background: rgba(129,140,248,.08);
+      color: var(--slate-700);
+      font-weight:800;
+      padding: 12px;
+      border-radius: 14px;
+      margin-bottom: 12px;
+    }
+    .form{ display:flex; flex-direction:column; gap:12px; }
+    .form__row{ display:flex; gap:10px; justify-content:flex-end; margin-top: 6px; }
 
-        .asset-details p {
-            font-size: 14px;
-            color: #94a3b8;
-        }
-
-        .asset-value {
-            text-align: right;
-        }
-
-        .asset-amount {
-            font-size: 16px;
-            font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 4px;
-        }
-
-        .asset-price {
-            font-size: 14px;
-            color: #10b981;
-        }
-
-        .asset-price.negative {
-            color: #ef4444;
-        }
-
-        /* Actions Panel */
-        .actions-panel {
-            background: #1e293b;
-            border-radius: 20px;
-            border: 1px solid #334155;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            height: fit-content;
-        }
-
-        .actions-title {
-            font-size: 20px;
-            font-weight: 600;
-            color: #f1f5f9;
-            margin-bottom: 24px;
-            text-align: center;
-        }
-
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .action-btn {
-            background: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
-            color: white;
-            border: none;
-            padding: 18px 24px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            letter-spacing: 0.5px;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(129, 140, 248, 0.35);
-        }
-
-        .action-btn:active {
-            transform: translateY(0);
-        }
-
-        .action-btn.secondary {
-            background: #334155;
-            color: #f1f5f9;
-        }
-
-        .action-btn.secondary:hover {
-            background: #475569;
-            box-shadow: 0 8px 25px rgba(51, 65, 85, 0.3);
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .fade-in-up {
-            animation: fadeInUp 0.5s ease;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .dashboard-container {
-                grid-template-columns: 1fr;
-                padding: 20px;
-                gap: 20px;
-            }
-
-            .dashboard-header {
-                padding: 16px 20px;
-            }
-
-            .portfolio-header {
-                padding: 20px;
-            }
-
-            .asset-item {
-                padding: 16px 20px;
-            }
-
-            .actions-panel {
-                padding: 20px;
-            }
-
-            .profile-section {
-                flex-direction: column;
-                gap: 8px;
-                align-items: flex-end;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .total-balance {
-                font-size: 28px;
-            }
-
-            .asset-icon {
-                width: 36px;
-                height: 36px;
-                font-size: 12px;
-            }
-
-            .action-btn {
-                padding: 16px 20px;
-                font-size: 15px;
-            }
-        }
-    </style>
+    /* Responsive */
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .hero{ align-items:flex-start; flex-direction:column; }
+      .hero__right{ width:100%; justify-content:flex-start; }
+      .input{ min-width: 220px; width: min(520px, 100%); }
+    }
+  </style>
 </head>
+
 <body>
-    <!-- Header -->
-    <header class="dashboard-header">
-        <div class="logo">InvestPro</div>
-        <div class="profile-section">
-            <span class="user-email" id="userEmail">Loading...</span>
-            <button class="logout-btn" onclick="logout()">Logout</button>
-            <div class="profile-icon" onclick="navigateToPortfolio()">👤</div>
+  <header class="topbar">
+    <div class="topbar__inner">
+      <nav class="nav">
+        <a class="nav__item" href="#">Spot</a>
+        <a class="nav__item" href="#">Futures</a>
+        <a class="nav__item" href="#">Earn</a>
+        <a class="nav__item" href="#">Petra66</a>
+        <a class="nav__item" href="#">FAQ</a>
+      </nav>
+
+      <div class="topbar__right">
+        <a class="wallet-pill is-active" href="#" aria-current="page">Wallet</a>
+        <button class="avatar" type="button" aria-label="Профиль">
+          <span class="avatar__dot"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="hero">
+      <div class="hero__left">
+        <h1 class="hero__title">Wallet</h1>
+        <p class="hero__subtitle">Обзор балансов, депозиты и вывод средств</p>
+      </div>
+
+      <div class="hero__right">
+        <div class="segmented" role="tablist" aria-label="Тип кошелька">
+          <button class="segmented__btn is-active" type="button" data-wallet="spot" role="tab" aria-selected="true">Spot</button>
+          <button class="segmented__btn" type="button" data-wallet="futures" role="tab" aria-selected="false">Futures</button>
+          <button class="segmented__btn" type="button" data-wallet="earn" role="tab" aria-selected="false">Earn</button>
         </div>
-    </header>
 
-    <!-- Main Dashboard -->
-    <main class="dashboard-container" id="dashboardContent" style="display: none;">
-        <!-- Portfolio Section -->
-        <section class="portfolio-section fade-in-up">
-            <div class="portfolio-header">
-                <h1 class="portfolio-title">Investment Portfolio</h1>
-                <p class="portfolio-subtitle">Your current holdings and performance</p>
-                <div class="total-balance" id="totalBalance">Loading...</div>
-            </div>
-            
-            <div class="assets-list">
-                <!-- Asset 1 -->
-                <div class="asset-item">
-                    <div class="asset-info">
-                        <div class="asset-icon">BTC</div>
-                        <div class="asset-details">
-                            <h3>Bitcoin</h3>
-                            <p>0.2547 BTC</p>
-                        </div>
-                    </div>
-                    <div class="asset-value">
-                        <div class="asset-amount">$15,234.56</div>
-                        <div class="asset-price">+2.34%</div>
-                    </div>
-                </div>
+        <div class="hero-actions">
+          <button class="btn btn--primary" type="button" data-open="deposit">
+            <span class="btn__dot btn__dot--green"></span>Deposit
+          </button>
+          <button class="btn btn--ghost" type="button" data-open="transfer">Transfer</button>
+          <button class="btn btn--danger" type="button" data-open="withdraw">
+            <span class="btn__dot btn__dot--red"></span>Withdraw
+          </button>
+        </div>
+      </div>
+    </section>
 
-                <!-- Asset 2 -->
-                <div class="asset-item">
-                    <div class="asset-info">
-                        <div class="asset-icon">ETH</div>
-                        <div class="asset-details">
-                            <h3>Ethereum</h3>
-                            <p>4.567 ETH</p>
-                        </div>
-                    </div>
-                    <div class="asset-value">
-                        <div class="asset-amount">$8,123.45</div>
-                        <div class="asset-price">+1.78%</div>
-                    </div>
-                </div>
+    <section class="grid">
+      <article class="card card--gradient">
+        <div class="card__row">
+          <div>
+            <div class="card__label">Общий баланс (оценка)</div>
+            <div class="card__value" id="totalBalance">$1,488.00</div>
+          </div>
+          <div class="pill">USDT</div>
+        </div>
+        <div class="card__hint">Режим: <span id="walletModeText">Spot</span></div>
+      </article>
 
-                <!-- Asset 3 -->
-                <div class="asset-item">
-                    <div class="asset-info">
-                        <div class="asset-icon">USDT</div>
-                        <div class="asset-details">
-                            <h3>Tether</h3>
-                            <p>1,000.00 USDT</p>
-                        </div>
-                    </div>
-                    <div class="asset-value">
-                        <div class="asset-amount">$1,000.00</div>
-                        <div class="asset-price">+0.00%</div>
-                    </div>
-                </div>
+      <article class="card">
+        <div class="card__label">Доступно</div>
+        <div class="card__value" id="availableBalance">$2,912.25</div>
+        <div class="card__hint">Сумма по активам в колонке “Available”</div>
+      </article>
 
-                <!-- Asset 4 -->
-                <div class="asset-item">
-                    <div class="asset-info">
-                        <div class="asset-icon">SOL</div>
-                        <div class="asset-details">
-                            <h3>Solana</h3>
-                            <p>12.345 SOL</p>
-                        </div>
-                    </div>
-                    <div class="asset-value">
-                        <div class="asset-amount">$209.88</div>
-                        <div class="asset-price negative">-0.56%</div>
-                    </div>
-                </div>
-            </div>
-        </section>
+      <article class="card">
+        <div class="card__label">Заморожено</div>
+        <div class="card__value" id="frozenBalance">$0.00</div>
+        <div class="card__hint">Ордера / маржа / блокировки</div>
+      </article>
+    </section>
 
-        <!-- Actions Panel -->
-        <aside class="actions-panel fade-in-up">
-            <h2 class="actions-title">Quick Actions</h2>
-            <div class="action-buttons">
-                <button class="action-btn" onclick="handleDeposit()">Deposit</button>
-                <button class="action-btn secondary" onclick="handleWithdraw()">Withdraw</button>
-                <button class="action-btn secondary" onclick="handleSwap()">Swap</button>
-            </div>
-        </aside>
-    </main>
+    <section class="toolbar card">
+      <div class="toolbar__left">
+        <label class="field">
+          <span class="field__label">Поиск</span>
+          <input class="input" id="searchInput" type="search" placeholder="Например: BTC, ETH, USDT…" />
+        </label>
 
-    <!-- Loading State -->
-    <div class="loading" id="loadingState">
-        <div class="spinner"></div>
-        Loading dashboard...
+        <label class="field">
+          <span class="field__label">Сеть / сеть депозита</span>
+          <select class="select" id="networkSelect">
+            <option value="any">Любая</option>
+            <option value="ERC20">ERC20</option>
+            <option value="TRC20">TRC20</option>
+            <option value="BEP20">BEP20</option>
+          </select>
+        </label>
+
+        <label class="checkbox">
+          <input id="hideSmall" type="checkbox" />
+          <span>Скрыть малые балансы</span>
+        </label>
+      </div>
+
+      <div class="toolbar__right">
+        <button class="btn btn--ghost" type="button" id="refreshBtn">Refresh</button>
+      </div>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-head">
+        <h2 class="table-head__title">Assets</h2>
+        <div class="table-head__meta" id="rowsInfo">0 активов</div>
+      </div>
+
+      <div class="table-wrap" role="region" aria-label="Таблица активов" tabindex="0">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="th-asset">Asset</th>
+              <th>Frozen</th>
+              <th>Available</th>
+              <th>Total</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="assetsTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal" id="modal" aria-hidden="true">
+    <div class="modal__backdrop" data-close></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal__top">
+        <div>
+          <div class="modal__title" id="modalTitle">Action</div>
+          <div class="modal__subtitle" id="modalSubtitle">—</div>
+        </div>
+        <button class="icon-btn" type="button" data-close aria-label="Закрыть">✕</button>
+      </div>
+
+      <div class="modal__body">
+        <div class="notice">Это демо-UI. Подключи реальные эндпоинты/валидацию — и готово.</div>
+
+        <div class="form">
+          <label class="field">
+            <span class="field__label">Asset</span>
+            <select class="select" id="modalAsset"></select>
+          </label>
+
+          <label class="field" id="addressField">
+            <span class="field__label">Address</span>
+            <input class="input" id="modalAddress" placeholder="0x… / T… / bc1…" />
+          </label>
+
+          <label class="field" id="amountField">
+            <span class="field__label">Amount</span>
+            <input class="input" id="modalAmount" inputmode="decimal" placeholder="0.00" />
+          </label>
+
+          <label class="field" id="networkField">
+            <span class="field__label">Network</span>
+            <select class="select" id="modalNetwork">
+              <option>ERC20</option>
+              <option>TRC20</option>
+              <option>BEP20</option>
+            </select>
+          </label>
+
+          <div class="form__row">
+            <button class="btn btn--primary" type="button" id="modalConfirm">Confirm</button>
+            <button class="btn btn--ghost" type="button" data-close>Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Error State -->
-    <div class="error-message" id="errorState" style="display: none;">
-        <div>Failed to load dashboard data</div>
-        <button class="retry-btn" onclick="loadDashboardData()">Retry</button>
-        <button class="retry-btn" onclick="logout()" style="background: #ef4444; margin-left: 10px;">Back to Login</button>
-    </div>
+  <script>
+    // Demo data + simple UI logic (filtering, totals, modal actions)
+    const ASSETS = [
+      { symbol: "USDT", name: "Tether",   network: "TRC20", frozen: 0.00, available: 2912.25 },
+      { symbol: "BTC",  name: "Bitcoin",  network: "BTC",   frozen: 0.00, available: 0.012345 },
+      { symbol: "ETH",  name: "Ethereum", network: "ERC20", frozen: 0.15, available: 0.40 },
+      { symbol: "SOL",  name: "Solana",   network: "SOL",   frozen: 0.00, available: 8.50 },
+      { symbol: "XRP",  name: "XRP",      network: "XRP",   frozen: 0.00, available: 120.00 },
+      { symbol: "DOGE", name: "Dogecoin", network: "DOGE",  frozen: 0.00, available: 50.00 },
+    ];
 
-    <script>
-    let currentUser = null;
+    const $ = (sel) => document.querySelector(sel);
 
-    // Проверка JWT токена и загрузка данных
-    async function checkAuthAndLoadData() {
-        const token = localStorage.getItem('token');
-        
-        console.log('Checking token:', token ? 'Token exists' : 'No token');
-        
-        if (!token) {
-            console.log('No token found, redirecting to login');
-            redirectToLogin();
-            return;
-        }
+    const tbody = $("#assetsTbody");
+    const rowsInfo = $("#rowsInfo");
 
-        try {
-            // Проверяем валидность токена
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const isExpired = Date.now() >= payload.exp * 1000;
-            
-            console.log('Token expiration check:', { 
-                exp: payload.exp, 
-                current: Date.now() / 1000,
-                isExpired 
-            });
-            
-            if (isExpired) {
-                console.log('Token expired, redirecting to login');
-                localStorage.removeItem('token');
-                redirectToLogin();
-                return;
-            }
+    const totalBalanceEl = $("#totalBalance");
+    const availableBalanceEl = $("#availableBalance");
+    const frozenBalanceEl = $("#frozenBalance");
 
-            console.log('Token is valid, loading user data...');
+    const searchInput = $("#searchInput");
+    const networkSelect = $("#networkSelect");
+    const hideSmall = $("#hideSmall");
+    const refreshBtn = $("#refreshBtn");
 
-            // Загружаем все данные пользователя одним запросом
-            await loadUserData(token);
-            
-            // Показываем dashboard
-            document.getElementById('loadingState').style.display = 'none';
-            document.getElementById('dashboardContent').style.display = 'grid';
-            
-        } catch (error) {
-            console.error('Auth check failed:', error);
-            showError('Authentication failed: ' + error.message);
-        }
+    const walletModeText = $("#walletModeText");
+    const segmentedBtns = document.querySelectorAll(".segmented__btn");
+
+    const modal = $("#modal");
+    const modalTitle = $("#modalTitle");
+    const modalSubtitle = $("#modalSubtitle");
+    const modalAsset = $("#modalAsset");
+    const modalAddress = $("#modalAddress");
+    const modalAmount = $("#modalAmount");
+    const modalNetwork = $("#modalNetwork");
+    const modalConfirm = $("#modalConfirm");
+
+    const addressField = $("#addressField");
+    const amountField = $("#amountField");
+    const networkField = $("#networkField");
+
+    function moneyUSD(n){
+      const x = Number(n);
+      if (!Number.isFinite(x)) return "$0.00";
+      return "$" + x.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function fmtNum(n){
+      const x = Number(n);
+      if (!Number.isFinite(x)) return "0";
+      if (Math.abs(x) < 1) return x.toLocaleString("en-US", { maximumFractionDigits: 8 });
+      return x.toLocaleString("en-US", { maximumFractionDigits: 2 });
+    }
+    function totalOf(a){ return (Number(a.frozen) || 0) + (Number(a.available) || 0); }
+
+    function renderOptions(){
+      modalAsset.innerHTML = "";
+      for (const a of ASSETS){
+        const opt = document.createElement("option");
+        opt.value = a.symbol;
+        opt.textContent = `${a.symbol} — ${a.name}`;
+        modalAsset.appendChild(opt);
+      }
     }
 
-    // Загрузка всех данных пользователя
-    async function loadUserData(token) {
-        try {
-            console.log('Fetching user data from /api/userdata...');
-            
-            const response = await fetch('/api/userdata', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response error:', errorText);
-                throw new Error(`Server error: ${response.status} - ${errorText}`);
-            }
-
-            const userData = await response.json();
-            console.log('User data received:', userData);
-            
-            currentUser = userData;
-            
-            // Обновляем интерфейс
-            document.getElementById('userEmail').textContent = userData.email;
-            
-            // Форматируем баланс правильно
-            const balance = parseFloat(userData.balance) || 0;
-            document.getElementById('totalBalance').textContent = 
-                `$${balance.toLocaleString('en-US', { 
-                    minimumFractionDigits: 2, 
-                    maximumFractionDigits: 2 
-                })}`;
-            
-            console.log('UI updated with balance:', balance);
-            
-        } catch (error) {
-            console.error('Error loading user data:', error);
-            throw error;
-        }
+    function currentFilters(){
+      return {
+        q: (searchInput.value || "").trim().toLowerCase(),
+        net: networkSelect.value,
+        hideSmall: hideSmall.checked,
+      };
     }
 
-    // Функция для загрузки данных dashboard
-    async function loadDashboardData() {
-        console.log('Loading dashboard data...');
-        
-        document.getElementById('loadingState').style.display = 'flex';
-        document.getElementById('errorState').style.display = 'none';
-        document.getElementById('dashboardContent').style.display = 'none';
-        
-        await checkAuthAndLoadData();
+    function passesFilters(asset, f){
+      if (f.net !== "any" && asset.network !== f.net) return false;
+
+      if (f.q){
+        const hay = `${asset.symbol} ${asset.name} ${asset.network}`.toLowerCase();
+        if (!hay.includes(f.q)) return false;
+      }
+
+      if (f.hideSmall){
+        if (totalOf(asset) < 1) return false; // demo threshold
+      }
+      return true;
     }
 
-    // Показать ошибку
-    function showError(message) {
-        console.error('Showing error:', message);
-        document.getElementById('loadingState').style.display = 'none';
-        document.getElementById('errorState').style.display = 'block';
-        document.getElementById('errorState').querySelector('div').textContent = message;
+    function computeTotals(list){
+      let sumAvail = 0;
+      let sumFrozen = 0;
+
+      for (const a of list){
+        sumAvail += Number(a.available) || 0;
+        sumFrozen += Number(a.frozen) || 0;
+      }
+
+      availableBalanceEl.textContent = moneyUSD(sumAvail);
+      frozenBalanceEl.textContent = moneyUSD(sumFrozen);
+
+      // demo "total balance estimate" (подгон под скрин)
+      const total = Math.max(0, (sumAvail * 0.51));
+      totalBalanceEl.textContent = moneyUSD(total);
     }
 
-    // Выход
-    function logout() {
-        console.log('Logging out...');
-        localStorage.removeItem('token');
-        redirectToLogin();
+    function renderTable(){
+      const f = currentFilters();
+      const list = ASSETS.filter(a => passesFilters(a, f));
+
+      tbody.innerHTML = "";
+      for (const a of list){
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>
+            <div class="asset">
+              <div class="coin" aria-hidden="true">${a.symbol.slice(0,1)}</div>
+              <div class="asset__meta">
+                <div class="asset__name">${a.symbol} <span class="asset__sub">(${a.name})</span></div>
+                <div class="asset__sub">Network: ${a.network}</div>
+              </div>
+            </div>
+          </td>
+          <td>${fmtNum(a.frozen)}</td>
+          <td>${fmtNum(a.available)}</td>
+          <td>${fmtNum(totalOf(a))}</td>
+          <td>
+            <div class="actions">
+              <button class="action action--deposit" type="button" data-action="deposit" data-asset="${a.symbol}">Deposit</button>
+              <button class="action action--transfer" type="button" data-action="transfer" data-asset="${a.symbol}">Transfer</button>
+              <button class="action action--withdraw" type="button" data-action="withdraw" data-asset="${a.symbol}">Withdraw</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+
+      rowsInfo.textContent = `${list.length} актив(ов)`;
+      computeTotals(list);
     }
 
-    // Редирект на логин
-    function redirectToLogin() {
-        console.log('Redirecting to login...');
-        window.location.href = '/login.html';
+    // Modal
+    let currentModalAction = "deposit";
+
+    function openModal(action, assetSymbol){
+      currentModalAction = action;
+
+      modalTitle.textContent =
+        action === "deposit" ? "Deposit" :
+        action === "withdraw" ? "Withdraw" :
+        "Transfer";
+
+      modalSubtitle.textContent = assetSymbol ? `Asset: ${assetSymbol}` : "Выберите актив";
+
+      modalAsset.value = assetSymbol || ASSETS[0].symbol;
+
+      if (action === "deposit"){
+        addressField.style.display = "none";
+        amountField.style.display = "none";
+        networkField.style.display = "";
+        modalConfirm.textContent = "Show deposit address";
+      } else if (action === "withdraw"){
+        addressField.style.display = "";
+        amountField.style.display = "";
+        networkField.style.display = "";
+        modalConfirm.textContent = "Confirm withdraw";
+      } else {
+        addressField.style.display = "none";
+        amountField.style.display = "";
+        networkField.style.display = "none";
+        modalConfirm.textContent = "Confirm transfer";
+      }
+
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      modalAddress.value = "";
+      modalAmount.value = "";
     }
 
-    // Navigation function
-    function navigateToPortfolio() {
-        alert('Navigating to Personal Portfolio...');
-        // window.location.href = '/portfolio';
+    function closeModal(){
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
     }
 
-    // Action handlers
-    function handleDeposit() {
-        alert('Deposit functionality will be implemented here');
+    function handleConfirm(){
+      const asset = modalAsset.value;
+      const network = modalNetwork.value;
+      const amount = modalAmount.value;
+
+      if (currentModalAction === "deposit"){
+        alert(`Deposit address (demo)\nAsset: ${asset}\nNetwork: ${network}\n\nПодключи реальный генератор адресов/QR.`);
+        closeModal();
+        return;
+      }
+
+      if (currentModalAction === "withdraw"){
+        const addr = modalAddress.value.trim();
+        const amt = Number(amount);
+        if (!addr){ alert("Введите адрес вывода."); return; }
+        if (!Number.isFinite(amt) || amt <= 0){ alert("Введите корректную сумму."); return; }
+        alert(`Withdraw (demo)\nAsset: ${asset}\nNetwork: ${network}\nAddress: ${addr}\nAmount: ${amt}`);
+        closeModal();
+        return;
+      }
+
+      // transfer
+      const amt = Number(amount);
+      if (!Number.isFinite(amt) || amt <= 0){ alert("Введите корректную сумму."); return; }
+      alert(`Transfer (demo)\nAsset: ${asset}\nAmount: ${amt}\n\nПодключи перевод между кошельками/счетами.`);
+      closeModal();
     }
 
-    function handleWithdraw() {
-        alert('Withdraw functionality will be implemented here');
-    }
+    document.addEventListener("click", (e) => {
+      const t = e.target;
 
-    function handleSwap() {
-        alert('Swap functionality will be implemented here');
-    }
-
-    // Обновление баланса (можно вызывать при действиях)
-    async function refreshBalance() {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try {
-                await loadUserData(token);
-            } catch (error) {
-                console.error('Failed to refresh balance:', error);
-            }
-        }
-    }
-
-    // Инициализация при загрузке страницы
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('Dashboard page loaded');
-        loadDashboardData();
-        
-        // Add some interactive effects
-        const assetItems = document.querySelectorAll('.asset-item');
-        assetItems.forEach((item, index) => {
-            item.style.animationDelay = `${index * 0.1}s`;
-            item.classList.add('fade-in-up');
-        });
+      if (t?.matches?.("[data-open]")){
+        openModal(t.getAttribute("data-open"), null);
+        return;
+      }
+      if (t?.matches?.("[data-action]")){
+        openModal(t.getAttribute("data-action"), t.getAttribute("data-asset"));
+        return;
+      }
+      if (t?.hasAttribute?.("data-close")){
+        closeModal();
+        return;
+      }
     });
 
-    // Для отладки - добавим функцию проверки в консоль
-    window.debugBalance = async function() {
-        const token = localStorage.getItem('token');
-        console.log('Current token:', token);
-        console.log('Current user data:', currentUser);
-        
-        if (token) {
-            console.log('Making test request to /api/userdata...');
-            const response = await fetch('/api/userdata', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await response.json();
-            console.log('Current balance from API:', data.balance);
-        }
-    };
-</script>
+    modalConfirm.addEventListener("click", handleConfirm);
+
+    searchInput.addEventListener("input", renderTable);
+    networkSelect.addEventListener("change", renderTable);
+    hideSmall.addEventListener("change", renderTable);
+
+    refreshBtn.addEventListener("click", () => {
+      refreshBtn.blur();
+      renderTable();
+    });
+
+    segmentedBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        segmentedBtns.forEach(b => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+
+        const mode =
+          btn.dataset.wallet === "spot" ? "Spot" :
+          btn.dataset.wallet === "futures" ? "Futures" : "Earn";
+
+        walletModeText.textContent = mode;
+
+        if (mode === "Futures") networkSelect.value = "ERC20";
+        if (mode === "Earn") networkSelect.value = "any";
+        if (mode === "Spot") networkSelect.value = "any";
+
+        renderTable();
+      });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && modal.classList.contains("is-open")) closeModal();
+    });
+
+    // Init
+    renderOptions();
+    renderTable();
+  </script>
 </body>
 </html>
